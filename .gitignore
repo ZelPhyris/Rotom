@@ -1,6 +1,7 @@
 # Secrets — ne JAMAIS committer le token du bot
 .env
 .env.*
+!.env.example
 *.token
 config.local.*
 
