@@ -9,6 +9,11 @@
   box-sizing: border-box;
 }
 
+/* the hidden attribute must win over class-level display rules below */
+[hidden] {
+  display: none !important;
+}
+
 html,
 body {
   margin: 0;
