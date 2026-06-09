@@ -25,5 +25,21 @@ services:
       db:
         condition: service_healthy
 
+  # Web API for the React site (Discord login + stats leaderboard). Published
+  # only on localhost so the host nginx can reverse-proxy /api to it.
+  api:
+    build: ./server
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://rotom:${POSTGRES_PASSWORD}@db:5432/rotom
+      HOST: 0.0.0.0
+      PORT: 3100
+    ports:
+      - '127.0.0.1:3100:3100'
+    depends_on:
+      db:
+        condition: service_healthy
+
 volumes:
   pgdata:
