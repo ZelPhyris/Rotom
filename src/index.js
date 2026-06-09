@@ -1,26 +1,44 @@
 import { basename, dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { Client, Collection, Events, GatewayIntentBits } from 'discord.js';
+import { Client, Collection, Events, GatewayIntentBits, Partials } from 'discord.js';
 import { config } from './config.js';
 import { collectCommandPaths } from './loadCommands.js';
+import { initDb } from './db.js';
 import { registerMemberCount } from './features/memberCount.js';
 import { registerVerification } from './features/verification.js';
 import { registerTempVoice } from './features/tempVoice.js';
 import { registerRdvControls } from './features/rdvControls.js';
+import { registerHelpControls } from './features/helpControls.js';
+import { registerLeveling } from './features/leveling.js';
+import { registerForumHeart } from './features/forumHeart.js';
+import { registerMoveControls } from './features/moveControls.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+const intents = [
+  GatewayIntentBits.Guilds,
+  // Privileged — required to count members per role. Enable it in the
+  // Developer Portal (Bot > Privileged Gateway Intents).
+  GatewayIntentBits.GuildMembers,
+  // Non-privileged — lets the verification flow detect newcomers' posts.
+  GatewayIntentBits.GuildMessages,
+  // Non-privileged — moderators validate newcomers via ✅/❌ reactions.
+  GatewayIntentBits.GuildMessageReactions,
+  // Non-privileged — required for the "join to create" temp voice channels.
+  GatewayIntentBits.GuildVoiceStates,
+];
+
+// Privileged — only declared when vision is configured, because declaring an
+// intent that isn't enabled in the Developer Portal makes login fail.
+// Enable "Message Content" in the portal at the same time you set GEMINI_API_KEY.
+if (config.geminiApiKey) {
+  intents.push(GatewayIntentBits.MessageContent);
+}
+
 const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    // Privileged — required to count members per role. Enable it in the
-    // Developer Portal (Bot > Privileged Gateway Intents).
-    GatewayIntentBits.GuildMembers,
-    // Non-privileged — lets the verification flow detect newcomers' posts.
-    GatewayIntentBits.GuildMessages,
-    // Non-privileged — required for the "join to create" temp voice channels.
-    GatewayIntentBits.GuildVoiceStates,
-  ],
+  intents,
+  // Needed to handle reactions on messages not in cache (e.g. after a restart).
+  partials: [Partials.Message, Partials.Channel, Partials.Reaction, Partials.User],
 });
 
 // --- Load commands ---
@@ -36,8 +54,9 @@ for (const file of collectCommandPaths(commandsDir)) {
 }
 
 // --- Events ---
-client.once(Events.ClientReady, (c) => {
+client.once(Events.ClientReady, async (c) => {
   console.log(`Ready. Logged in as ${c.user.tag}.`);
+  await initDb().catch((err) => console.error('[db] Initialization failed:', err));
 });
 
 // --- Features ---
@@ -45,9 +64,14 @@ registerMemberCount(client);
 registerVerification(client);
 registerTempVoice(client);
 registerRdvControls(client);
+registerHelpControls(client);
+registerLeveling(client);
+registerForumHeart(client);
+registerMoveControls(client);
 
 client.on(Events.InteractionCreate, async (interaction) => {
-  if (!interaction.isChatInputCommand()) return;
+  // Slash commands and message context-menu commands are both dispatched by name.
+  if (!interaction.isChatInputCommand() && !interaction.isMessageContextMenuCommand()) return;
 
   const command = client.commands.get(interaction.commandName);
   if (!command) return;

@@ -1,0 +1,29 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: rotom
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: rotom
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U rotom -d rotom']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    # No published port: the bot reaches the DB over the internal compose network.
+
+  bot:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://rotom:${POSTGRES_PASSWORD}@db:5432/rotom
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:

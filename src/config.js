@@ -12,6 +12,20 @@ function required(name) {
   return value;
 }
 
+/**
+ * Parse "10:roleId,20:roleId,30:roleId" into a sorted [{ level, roleId }] list.
+ */
+function parseLevelRoles(raw) {
+  return (raw || '')
+    .split(',')
+    .map((pair) => {
+      const [level, roleId] = pair.split(':').map((s) => s.trim());
+      return { level: Number(level), roleId };
+    })
+    .filter((r) => r.level > 0 && r.roleId)
+    .sort((a, b) => a.level - b.level);
+}
+
 export const config = {
   token: required('DISCORD_TOKEN'),
   clientId: required('CLIENT_ID'),
@@ -30,4 +44,18 @@ export const config = {
   rdvAnnounceChannelId: process.env.RDV_ANNOUNCE_CHANNEL_ID || '1513457052679409685',
   // Channel where a welcome message is posted once a newcomer is validated.
   welcomeChannelId: process.env.WELCOME_CHANNEL_ID || '1513457052679409689',
+  // PostgreSQL connection string. Empty disables DB-backed features.
+  databaseUrl: process.env.DATABASE_URL || '',
+  // Google Gemini API key (free tier) for reading profile screenshots. Empty disables it.
+  geminiApiKey: process.env.GEMINI_API_KEY || '',
+  // Vision model used to extract the trainer name from a screenshot.
+  visionModel: process.env.VISION_MODEL || 'gemini-2.5-flash',
+  // Role whose members are listed as "ambassadeurs" in the presentation embed.
+  ambassadorRoleId: process.env.AMBASSADOR_ROLE_ID || '1513457052226293796',
+  // Optional: channel for level-up announcements (else the channel where it happened).
+  levelupChannelId: process.env.LEVELUP_CHANNEL_ID || '',
+  // Reward roles by level, e.g. LEVEL_ROLES="10:roleId,20:roleId,30:roleId".
+  levelRoles: parseLevelRoles(process.env.LEVEL_ROLES),
+  // Forum channel where the bot ❤️-reacts to posted images.
+  forumHeartChannelId: process.env.FORUM_HEART_CHANNEL_ID || '1513801356509708489',
 };

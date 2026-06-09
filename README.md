@@ -1,4 +1,4 @@
-# Rotom'Pau
+# Motisma'Pau
 
 A Discord bot for the Pokémon GO community of Pau, France.
 
@@ -34,7 +34,7 @@ The bot relies on a single source of truth: the players' "area" roles.
 Player on Discord
    |  (selects their area through "Channels & Roles")
    v
-Rotom'Pau  --- reads roles --->  "Area" roles (permanent)
+Motisma'Pau  --- reads roles --->  "Area" roles (permanent)
    |
    |-- /map   -> generates a PNG of the areas with counters
    '-- /rdv   -> creates a temporary thread for an outing

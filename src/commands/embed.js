@@ -1,6 +1,8 @@
 import { SlashCommandBuilder, PermissionFlagsBits } from 'discord.js';
 import { buildReglementEmbed } from '../embeds/reglement.js';
 import { buildVerificationEmbed } from '../embeds/verification.js';
+import { buildSuggestionsEmbed } from '../embeds/suggestions.js';
+import { buildPresentationEmbed } from '../embeds/presentation.js';
 
 /**
  * Registry of publishable info embeds. To add one: create its builder in
@@ -9,6 +11,8 @@ import { buildVerificationEmbed } from '../embeds/verification.js';
 const EMBEDS = {
   reglement: { label: 'Règlement', build: buildReglementEmbed },
   verification: { label: 'Vérification', build: buildVerificationEmbed },
+  suggestions: { label: 'Suggestions', build: buildSuggestionsEmbed },
+  presentation: { label: 'Présentation', build: buildPresentationEmbed },
 };
 
 export const data = new SlashCommandBuilder()
@@ -35,6 +39,7 @@ export async function execute(interaction) {
     return;
   }
 
-  await interaction.channel.send({ embeds: [entry.build()] });
+  const embed = await entry.build(interaction);
+  await interaction.channel.send({ embeds: [embed] });
   await interaction.reply({ content: `Embed « ${entry.label} » publié ici. ✅`, ephemeral: true });
 }

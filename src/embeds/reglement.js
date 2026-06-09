@@ -77,6 +77,6 @@ export function buildReglementEmbed() {
       },
     )
     .setFooter({
-      text: 'Respecte l’esprit du jeu : bonne humeur et sécurité avant tout — Rotom’Pau',
+      text: 'Respecte l’esprit du jeu : bonne humeur et sécurité avant tout — Motisma’Pau',
     });
 }

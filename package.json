@@ -13,10 +13,12 @@
   },
   "license": "MIT",
   "dependencies": {
+    "@google/genai": "^2.8.0",
     "@napi-rs/canvas": "^1.0.0",
     "dejavu-fonts-ttf": "^2.37.3",
     "discord.js": "^14.16.3",
     "dotenv": "^16.4.5",
-    "jimp": "^1.6.1"
+    "jimp": "^1.6.1",
+    "pg": "^8.21.0"
   }
 }

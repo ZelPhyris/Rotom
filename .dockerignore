@@ -1,0 +1,13 @@
+node_modules
+npm-debug.log*
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+assets/basemap_*.png
+map_*.png
+preview_*.png
+*.log
+Sans titre.png
+docs/
