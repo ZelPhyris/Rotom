@@ -1,0 +1,28 @@
+{
+  "events": [
+    {
+      "title": "Raid Légendaire — heure des raids",
+      "date": "2026-06-14T18:00:00",
+      "place": "Place Royale",
+      "sector": "Pau Centre",
+      "type": "raid",
+      "description": "On se retrouve pour enchaîner les raids de l'heure légendaire. Amenez des comptes à inviter."
+    },
+    {
+      "title": "Balade communautaire",
+      "date": "2026-06-21T10:00:00",
+      "place": "Parc Beaumont",
+      "sector": "Pau Centre",
+      "type": "balade",
+      "description": "Balade tranquille autour du parc, stops et arènes. Ouvert à tous les niveaux."
+    },
+    {
+      "title": "Community Day",
+      "date": "2026-07-05T14:00:00",
+      "place": "Le Hameau",
+      "sector": "Pau Le Hameau",
+      "type": "communaute",
+      "description": "Journée communauté : on couvre le secteur ensemble pour profiter du spawn boosté."
+    }
+  ]
+}

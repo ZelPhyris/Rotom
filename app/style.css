@@ -14,16 +14,16 @@
   display: none !important;
 }
 
-html,
-body {
-  margin: 0;
+html {
   height: 100%;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  color: #fff;
-  background: #0d1014;
 }
 
 body {
+  margin: 0;
+  min-height: 100%;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: #fff;
+  background: #0d1014;
   display: flex;
   flex-direction: column;
 }
@@ -331,22 +331,455 @@ body {
   color: #444;
 }
 
-@media (max-width: 640px) {
+/* ---- shared layout: navbar position + mobile toggle ---- */
+.navbar {
+  position: relative;
+}
+
+.nav-toggle {
+  display: none;
+  font-size: 22px;
+  line-height: 1;
+  background: none;
+  border: 0;
+  color: #fff;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+}
+
+/* ---- page shell (content pages) ---- */
+main {
+  flex: 1;
+}
+
+.page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 36px 20px 60px;
+  width: 100%;
+}
+
+.page-head h1 {
+  margin: 0 0 8px;
+  font-size: 30px;
+}
+
+.page-head p {
+  margin: 0 0 28px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 15px;
+  line-height: 1.6;
+  max-width: 720px;
+}
+
+code {
+  background: rgba(255, 255, 255, 0.1);
+  padding: 1px 6px;
+  border-radius: 5px;
+  font-size: 0.92em;
+}
+
+.empty {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.fineprint {
+  margin-top: 28px;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.fineprint a,
+.page a {
+  color: #79b8ff;
+}
+
+/* ---- hero (home) ---- */
+.hero {
+  padding: 72px 20px 56px;
+  background: radial-gradient(900px 360px at 70% -10%, rgba(244, 121, 31, 0.18), transparent 60%),
+    radial-gradient(800px 360px at 10% 0%, rgba(44, 125, 160, 0.22), transparent 55%);
+}
+
+.hero-inner {
+  max-width: 820px;
+  margin: 0 auto;
+}
+
+.hero-badge {
+  display: inline-block;
+  font-size: 12px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 6px 12px;
+  border-radius: 20px;
+}
+
+.hero h1 {
+  margin: 18px 0 14px;
+  font-size: clamp(28px, 5vw, 46px);
+  line-height: 1.1;
+  letter-spacing: -0.5px;
+}
+
+.hero-lead {
+  font-size: 17px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.78);
+  max-width: 660px;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.btn-primary,
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  font-weight: 600;
+  font-size: 15px;
+  text-decoration: none;
+  padding: 12px 22px;
+  border-radius: 11px;
+}
+
+.btn-primary {
+  color: #fff;
+  background: #5865f2;
+}
+
+.btn-primary:hover {
+  background: #4752c4;
+}
+
+.btn-ghost {
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* ---- feature cards (home) ---- */
+.cards-section {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 8px 20px 40px;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 16px;
+}
+
+.card {
+  display: block;
+  padding: 22px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  text-decoration: none;
+  color: #fff;
+  transition: transform 0.12s, border-color 0.12s, background 0.12s;
+}
+
+.card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(244, 121, 31, 0.5);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.card-emoji {
+  font-size: 26px;
+}
+
+.card h3 {
+  margin: 12px 0 6px;
+  font-size: 17px;
+}
+
+.card p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+/* ---- about (home) ---- */
+.about {
+  background: rgba(255, 255, 255, 0.03);
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.about-inner {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 44px 20px;
+}
+
+.about h2 {
+  margin: 0 0 14px;
+  font-size: 24px;
+}
+
+.about p {
+  margin: 0 0 12px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.about strong {
+  color: #fff;
+}
+
+/* ---- events (sorties) ---- */
+.events {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.event-card {
+  display: flex;
+  gap: 18px;
+  padding: 18px;
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.event-date {
+  flex: none;
+  width: 120px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.event-day {
+  font-weight: 700;
+  text-transform: capitalize;
+  font-size: 14px;
+}
+
+.event-time {
+  font-size: 13px;
+  color: var(--hot);
+  font-weight: 600;
+}
+
+.event-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.event-head h3 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.event-meta {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.event-desc {
+  margin: 8px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.tag {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  color: #fff;
+}
+
+.tag-raid {
+  background: #e23b3b;
+}
+.tag-balade {
+  background: #2a9df4;
+}
+.tag-communaute {
+  background: #f4791f;
+}
+.tag-default {
+  background: #6b7280;
+}
+
+/* ---- sector stats (communauté) ---- */
+.sector-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.sector-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sector-badge {
+  flex: none;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 20px;
+  color: #fff;
+  border: 3px solid rgba(255, 255, 255, 0.92);
+}
+
+.sector-info h3 {
+  margin: 0 0 2px;
+  font-size: 16px;
+}
+
+.sector-info p {
+  margin: 0;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* ---- guides ---- */
+.guides {
+  display: grid;
+  gap: 16px;
+}
+
+.guide {
+  padding: 22px;
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.guide h2 {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+
+.guide p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+/* ---- site footer ---- */
+.site-footer {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--panel);
+}
+
+.footer-inner {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.footer-links {
+  display: flex;
+  gap: 16px;
+}
+
+.footer-links a {
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: none;
+}
+
+.footer-links a:hover {
+  color: #fff;
+}
+
+/* the map page stays a fixed full-height layout */
+.map-page {
+  height: 100%;
+  overflow: hidden;
+}
+
+@media (max-width: 720px) {
   .navbar {
     gap: 12px;
     padding: 8px 12px;
   }
+  .nav-toggle {
+    display: block;
+    order: 3;
+    margin-left: auto;
+  }
+  .nav-right {
+    order: 2;
+    margin-left: 0;
+  }
   .nav-links {
+    order: 4;
     display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    padding: 8px;
+    background: #12161d;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  .nav-links.open {
+    display: flex;
+  }
+  .nav-links a {
+    padding: 11px 12px;
   }
   .brand-text small {
     display: none;
   }
-  .total-chip {
-    display: none;
-  }
   .user-name {
     max-width: 90px;
+  }
+  .event-card {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .event-date {
+    flex-direction: row;
+    gap: 8px;
+    width: auto;
   }
   .scale-bar {
     width: 110px;

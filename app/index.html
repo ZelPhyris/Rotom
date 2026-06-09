@@ -2,96 +2,89 @@
 <html lang="fr">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-    <title>Rotom — Joueurs Pokémon GO par secteur · Pau</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Rotom — Communauté Pokémon GO de Pau</title>
     <meta
       name="description"
-      content="Carte interactive de la communauté Pokémon GO de Pau : combien de joueurs sont actifs dans chaque secteur, sans jamais révéler d'adresse personnelle."
-    />
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-      crossorigin=""
+      content="Le site de la communauté Pokémon GO de Pau : carte des secteurs, sorties, entraide. On n'est jamais seul à jouer près de chez soi."
     />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <header class="navbar">
-      <a class="brand" href="/">
-        <span class="dot"></span>
-        <span class="brand-text">
-          Rotom
-          <small>Pau · Pokémon GO</small>
-        </span>
-      </a>
+    <header id="site-nav"></header>
 
-      <nav class="nav-links">
-        <a href="#map" class="active">Carte</a>
-        <button type="button" class="link-btn" id="about-btn">À propos</button>
-      </nav>
-
-      <div class="nav-right">
-        <span class="total-chip"><strong id="total">—</strong> joueurs</span>
-
-        <button type="button" class="btn-discord" id="login-btn" hidden>
-          <svg viewBox="0 -28.5 256 256" width="20" height="20" aria-hidden="true">
-            <path
-              fill="currentColor"
-              d="M216.856 16.597A208.502 208.502 0 0 0 164.042 0c-2.275 4.113-4.933 9.645-6.766 14.046-19.692-2.961-39.203-2.961-58.533 0-1.832-4.4-4.55-9.933-6.846-14.046a207.809 207.809 0 0 0-52.855 16.638C5.618 67.147-3.443 116.4 1.087 164.956c22.169 16.555 43.653 26.612 64.775 33.193a161.094 161.094 0 0 0 13.853-22.529 134.41 134.41 0 0 1-21.823-10.611c1.832-1.355 3.624-2.772 5.356-4.23 42.123 19.702 87.89 19.702 129.51 0 1.752 1.458 3.544 2.875 5.355 4.23a134.012 134.012 0 0 1-21.863 10.63 161.57 161.57 0 0 0 13.852 22.51c21.142-6.58 42.646-16.637 64.815-33.213 5.316-56.288-9.08-105.09-38.056-148.359ZM85.474 135.095c-12.645 0-23.015-11.805-23.015-26.18s10.149-26.2 23.015-26.2c12.867 0 23.236 11.804 23.015 26.2.02 14.375-10.148 26.18-23.015 26.18Zm85.051 0c-12.645 0-23.014-11.805-23.014-26.18s10.148-26.2 23.014-26.2c12.867 0 23.236 11.804 23.015 26.2 0 14.375-10.148 26.18-23.015 26.18Z"
-            />
-          </svg>
-          Se connecter
-        </button>
-
-        <div class="user-menu" id="user-menu" hidden>
-          <img id="user-avatar" class="avatar" alt="" width="32" height="32" />
-          <span id="user-name" class="user-name"></span>
-          <button type="button" class="logout-btn" id="logout-btn" title="Se déconnecter">Déconnexion</button>
+    <main>
+      <section class="hero">
+        <div class="hero-inner">
+          <span class="hero-badge">Communauté Pokémon GO · Pau</span>
+          <h1>On n'est jamais seul à jouer près de chez soi.</h1>
+          <p class="hero-lead">
+            Rotom rassemble les dresseurs de Pau et des environs. Découvre combien de joueurs
+            sont actifs dans ton secteur, retrouve les sorties à venir, et rejoins une communauté
+            active — le tout sans jamais partager ton adresse.
+          </p>
+          <div class="hero-actions">
+            <a class="btn-primary" id="cta-discord" href="#" target="_blank" rel="noopener">
+              Rejoindre le Discord
+            </a>
+            <a class="btn-ghost" href="carte.html">Voir la carte</a>
+          </div>
         </div>
-      </div>
-    </header>
+      </section>
 
-    <div id="map" aria-label="Carte des secteurs de jeu"></div>
+      <section class="cards-section">
+        <div class="cards">
+          <a class="card" href="carte.html">
+            <span class="card-emoji">🗺️</span>
+            <h3>Carte des secteurs</h3>
+            <p>Combien de dresseurs jouent dans chaque coin de Pau, en un coup d'œil.</p>
+          </a>
+          <a class="card" href="sorties.html">
+            <span class="card-emoji">📅</span>
+            <h3>Sorties &amp; RDV</h3>
+            <p>Raids, balades, événements : retrouve les prochaines sorties de la communauté.</p>
+          </a>
+          <a class="card" href="communaute.html">
+            <span class="card-emoji">📊</span>
+            <h3>Communauté</h3>
+            <p>Les chiffres par secteur et l'activité des dresseurs au fil du temps.</p>
+          </a>
+          <a class="card" href="guides.html">
+            <span class="card-emoji">💡</span>
+            <h3>Guides locaux</h3>
+            <p>Bons spots, astuces et infos pour bien jouer à Pau.</p>
+          </a>
+        </div>
+      </section>
 
-    <footer class="legend">
-      <div class="scale">
-        <span class="scale-label">peu</span>
-        <span class="scale-bar"></span>
-        <span class="scale-label">beaucoup</span>
-      </div>
-      <p class="note">
-        Un secteur n'affiche son compteur qu'à partir de <strong>3 joueurs</strong> (anonymat).
-        <span id="updated" class="updated"></span>
-      </p>
-    </footer>
+      <section class="about" id="apropos">
+        <div class="about-inner">
+          <h2>À propos de Rotom</h2>
+          <p>
+            Rotom est l'outil de la communauté Pokémon GO de Pau. Il montre combien de joueurs
+            sont actifs dans chaque secteur — pour qu'on voie qu'on n'est jamais seul à jouer
+            près de chez soi.
+          </p>
+          <p>
+            <strong>Vie privée d'abord.</strong> Aucune adresse n'est affichée : on ne montre que
+            des totaux par secteur, et seulement à partir de <strong>3 joueurs</strong>. Les chiffres
+            viennent des rôles que chacun choisit librement sur le Discord.
+          </p>
+          <p>
+            La connexion Discord sert uniquement à afficher ton pseudo et ton avatar sur le site.
+            Rien n'est stocké sur un serveur : tu peux te déconnecter à tout moment.
+          </p>
+        </div>
+      </section>
+    </main>
 
-    <div class="modal-backdrop" id="about-modal" hidden>
-      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="about-title">
-        <button type="button" class="modal-close" id="about-close" aria-label="Fermer">&times;</button>
-        <h2 id="about-title">À propos de Rotom</h2>
-        <p>
-          Carte de la communauté Pokémon GO de Pau. Elle montre combien de joueurs sont actifs
-          dans chaque secteur — pour qu'on voie qu'on n'est jamais seul à jouer près de chez soi.
-        </p>
-        <p>
-          <strong>Vie privée d'abord.</strong> Aucune adresse n'est affichée : on ne montre que des
-          totaux par secteur, et seulement à partir de <strong>3 joueurs</strong>. Les chiffres
-          viennent des rôles que chacun choisit librement sur le Discord.
-        </p>
-        <p>
-          La connexion Discord sert uniquement à afficher ton pseudo et ton avatar sur le site.
-          On ne stocke rien sur un serveur — tu peux te déconnecter à tout moment.
-        </p>
-      </div>
-    </div>
+    <footer id="site-footer"></footer>
 
-    <script
-      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-      crossorigin=""
-    ></script>
+    <script src="layout.js"></script>
     <script src="auth.js"></script>
-    <script src="app.js"></script>
+    <script>
+      // point the hero CTA at the Discord invite resolved by layout.js
+      document.getElementById("cta-discord").href = window.ROTOM.DISCORD_INVITE;
+    </script>
   </body>
 </html>

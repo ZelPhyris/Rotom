@@ -152,17 +152,3 @@ main().catch((err) => {
   document.getElementById("map").innerHTML =
     '<p style="padding:24px;color:#fff">Impossible de charger la carte. Réessaie dans un instant.</p>';
 });
-
-// About modal (independent of the map loading)
-{
-  const modal = document.getElementById("about-modal");
-  const close = () => (modal.hidden = true);
-  document.getElementById("about-btn")?.addEventListener("click", () => (modal.hidden = false));
-  document.getElementById("about-close")?.addEventListener("click", close);
-  modal?.addEventListener("click", (e) => {
-    if (e.target === modal) close();
-  });
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && !modal.hidden) close();
-  });
-}

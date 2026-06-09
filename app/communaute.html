@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Communauté — Rotom · Pau</title>
+    <meta name="description" content="Les chiffres de la communauté Pokémon GO de Pau : joueurs actifs par secteur." />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header id="site-nav"></header>
+
+    <main class="page">
+      <div class="page-head">
+        <h1>La communauté en chiffres</h1>
+        <p>
+          Nombre de dresseurs actifs par secteur, d'après les rôles choisis sur le Discord.
+          <strong id="total">—</strong> joueurs visibles au total.
+          <span id="updated" class="updated"></span>
+        </p>
+      </div>
+
+      <div class="sector-grid" id="sectors">
+        <p class="empty">Chargement des chiffres…</p>
+      </div>
+
+      <p class="fineprint">
+        Vie privée : on n'affiche le compteur d'un secteur qu'à partir de 3 joueurs, et jamais
+        aucune adresse. <a href="carte.html">Voir sur la carte →</a>
+      </p>
+    </main>
+
+    <footer id="site-footer"></footer>
+
+    <script src="layout.js"></script>
+    <script src="auth.js"></script>
+    <script src="communaute.js"></script>
+  </body>
+</html>

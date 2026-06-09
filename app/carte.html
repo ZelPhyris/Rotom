@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <title>Carte des secteurs — Rotom · Pau</title>
+    <meta
+      name="description"
+      content="Carte interactive de la communauté Pokémon GO de Pau : combien de joueurs sont actifs dans chaque secteur."
+    />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+      crossorigin=""
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body class="map-page">
+    <header id="site-nav"></header>
+
+    <div id="map" aria-label="Carte des secteurs de jeu"></div>
+
+    <footer class="legend">
+      <div class="scale">
+        <span class="scale-label">peu</span>
+        <span class="scale-bar"></span>
+        <span class="scale-label">beaucoup</span>
+      </div>
+      <p class="note">
+        <strong id="total">—</strong> joueurs visibles · un secteur n'affiche son compteur qu'à partir
+        de <strong>3 joueurs</strong> (anonymat).
+        <span id="updated" class="updated"></span>
+      </p>
+    </footer>
+
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+      crossorigin=""
+    ></script>
+    <script src="layout.js"></script>
+    <script src="auth.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
