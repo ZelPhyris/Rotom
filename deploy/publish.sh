@@ -9,7 +9,7 @@ WEBROOT="/var/www/rotom-pogo"
 
 # Only the files the site actually needs (CNAME/README.md are GitHub-Pages-only).
 for f in index.html style.css app.js counts.json sectors.geojson; do
-  cp "$REPO/docs/$f" "$WEBROOT/$f"
+  cp "$REPO/app/$f" "$WEBROOT/$f"
 done
 
-echo "Published $REPO/docs -> $WEBROOT"
+echo "Published $REPO/app -> $WEBROOT"

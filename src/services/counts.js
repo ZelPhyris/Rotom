@@ -5,7 +5,7 @@ import { countBySector } from './sectors.js';
 import { MIN_VISIBLE_PLAYERS } from '../config/sectors.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const COUNTS_FILE = join(__dirname, '..', '..', 'docs', 'counts.json');
+const COUNTS_FILE = join(__dirname, '..', '..', 'app', 'counts.json');
 
 /**
  * Build the public counts payload consumed by the interactive web map.
@@ -24,8 +24,8 @@ export async function buildCounts(guild) {
 }
 
 /**
- * Write docs/counts.json so the static map (GitHub Pages) picks up fresh numbers.
- * Commit/push docs/counts.json (e.g. from a scheduled job) to publish them.
+ * Write app/counts.json so the static map picks up fresh numbers.
+ * Publish it to the web root (see deploy/) from a scheduled job.
  *
  * @param {import('discord.js').Guild} guild
  * @returns {Promise<string>} absolute path of the file written

@@ -18,4 +18,12 @@ export const config = {
   guildId: required('GUILD_ID'),
   // Optional: voice channel whose name mirrors the member count ("Membres : {nb}").
   memberCountChannelId: process.env.MEMBER_COUNT_CHANNEL_ID || '1513800614348455988',
+  // "Pending" role assigned on join until a moderator validates the newcomer.
+  verificationRoleId: process.env.VERIFICATION_ROLE_ID || '1513457052239003678',
+  // Optional: restrict the verification flow to this channel (else any channel).
+  verificationChannelId: process.env.VERIFICATION_CHANNEL_ID || '',
+  // "Join to create" hub voice channel: joining it spawns a personal channel.
+  tempVoiceHubId: process.env.TEMP_VOICE_HUB_ID || '1513457053677518974',
+  // Category where /rdv creates its temporary meetup channels.
+  rdvCategoryId: process.env.RDV_CATEGORY_ID || '1513457053270675500',
 };

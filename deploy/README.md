@@ -39,7 +39,7 @@ copy after writing) and schedule it, e.g. publish fresh numbers every 10 min:
 
 ```bash
 # crontab -e
-*/10 * * * * cp ~/Projects/Rotom/docs/counts.json /var/www/rotom-pogo/counts.json
+*/10 * * * * cp ~/Projects/Rotom/app/counts.json /var/www/rotom-pogo/counts.json
 ```
 
 Only aggregated counts are published — never member identities.

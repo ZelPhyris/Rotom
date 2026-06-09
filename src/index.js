@@ -4,6 +4,9 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { Client, Collection, Events, GatewayIntentBits } from 'discord.js';
 import { config } from './config.js';
 import { registerMemberCount } from './features/memberCount.js';
+import { registerVerification } from './features/verification.js';
+import { registerTempVoice } from './features/tempVoice.js';
+import { registerRdvControls } from './features/rdvControls.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -13,6 +16,10 @@ const client = new Client({
     // Privileged — required to count members per role. Enable it in the
     // Developer Portal (Bot > Privileged Gateway Intents).
     GatewayIntentBits.GuildMembers,
+    // Non-privileged — lets the verification flow detect newcomers' posts.
+    GatewayIntentBits.GuildMessages,
+    // Non-privileged — required for the "join to create" temp voice channels.
+    GatewayIntentBits.GuildVoiceStates,
   ],
 });
 
@@ -35,6 +42,9 @@ client.once(Events.ClientReady, (c) => {
 
 // --- Features ---
 registerMemberCount(client);
+registerVerification(client);
+registerTempVoice(client);
+registerRdvControls(client);
 
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
