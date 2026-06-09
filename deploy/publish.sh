@@ -8,7 +8,7 @@ REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 WEBROOT="/var/www/rotom-pogo"
 
 # Only the files the site actually needs (CNAME/README.md are GitHub-Pages-only).
-for f in index.html style.css app.js counts.json sectors.geojson pois.geojson; do
+for f in index.html style.css app.js auth.js counts.json sectors.geojson pois.geojson; do
   cp "$REPO/app/$f" "$WEBROOT/$f"
 done
 
