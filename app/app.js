@@ -29,13 +29,9 @@ function centroid(ring) {
 }
 
 async function main() {
-  const [geo, data, pois] = await Promise.all([
+  const [geo, data] = await Promise.all([
     fetch("sectors.geojson").then((r) => r.json()),
     fetch("counts.json", { cache: "no-store" }).then((r) => r.json()),
-    // PokeStops / Gyms are optional and community-curated; never block the map on them.
-    fetch("pois.geojson")
-      .then((r) => (r.ok ? r.json() : { features: [] }))
-      .catch(() => ({ features: [] })),
   ]);
 
   const minVisible = data.minVisiblePlayers ?? 3;
@@ -105,35 +101,6 @@ async function main() {
       icon: L.divIcon({ className: "badge-icon", html, iconSize: [0, 0] }),
     }).addTo(map);
   }
-
-  // PokeStops and Gyms — community-curated layer, toggleable from the top-right control
-  const POI = {
-    pokestop: { color: "#2a9df4", radius: 6, label: "PokéStop" },
-    gym: { color: "#e23b3b", radius: 7, label: "Arène" },
-  };
-  const stops = L.layerGroup();
-  const gyms = L.layerGroup();
-  for (const f of pois.features ?? []) {
-    if (!f.geometry || f.geometry.type !== "Point") continue;
-    const kind = f.properties?.kind === "gym" ? "gym" : "pokestop";
-    const style = POI[kind];
-    const [lng, lat] = f.geometry.coordinates;
-    const marker = L.circleMarker([lat, lng], {
-      radius: style.radius,
-      color: "#fff",
-      weight: 2,
-      fillColor: style.color,
-      fillOpacity: 0.95,
-    });
-    const name = f.properties?.name ?? style.label;
-    marker.bindPopup(`<div class="popup"><h3>${name}</h3><span class="count">${style.label}</span></div>`);
-    marker.addTo(kind === "gym" ? gyms : stops);
-  }
-  stops.addTo(map);
-  gyms.addTo(map);
-  L.control
-    .layers(null, { "PokéStops": stops, "Arènes": gyms }, { collapsed: false })
-    .addTo(map);
 
   const total = values.filter((c) => c >= minVisible).reduce((a, c) => a + c, 0);
   document.getElementById("total").textContent = total;
