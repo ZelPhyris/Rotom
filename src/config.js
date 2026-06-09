@@ -26,4 +26,8 @@ export const config = {
   tempVoiceHubId: process.env.TEMP_VOICE_HUB_ID || '1513457053677518974',
   // Category where /rdv creates its temporary meetup channels.
   rdvCategoryId: process.env.RDV_CATEGORY_ID || '1513457053270675500',
+  // Channel where /rdv announces newly created meetups.
+  rdvAnnounceChannelId: process.env.RDV_ANNOUNCE_CHANNEL_ID || '1513457052679409685',
+  // Channel where a welcome message is posted once a newcomer is validated.
+  welcomeChannelId: process.env.WELCOME_CHANNEL_ID || '1513457052679409689',
 };

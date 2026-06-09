@@ -71,16 +71,25 @@ export const data = new SlashCommandBuilder()
   )
   .addStringOption((opt) =>
     opt.setName('time').setDescription('À quelle heure (ex. 15h)').setRequired(true),
+  )
+  .addStringOption((opt) =>
+    opt
+      .setName('description')
+      .setDescription('Petit mot sur la sortie (optionnel)')
+      .setMaxLength(300),
   );
 
 export async function execute(interaction) {
   const place = interaction.options.getString('place', true);
   const time = interaction.options.getString('time', true);
+  const description = interaction.options.getString('description');
 
   await interaction.deferReply({ ephemeral: true });
 
   const deleteAt = eventStartEpoch(time) + 60 * 60 * 1000; // 1h after the meetup
-  const deleteSec = Math.floor(deleteAt / 1000);
+  const c = partsInTz(deleteAt, PARIS);
+  const pad = (n) => String(n).padStart(2, '0');
+  const closeLabel = `${pad(c.day)}/${pad(c.month)} à ${pad(c.hour)}h${pad(c.minute)}`;
 
   const name = `${PREFIX}${[slug(place), slug(time)].filter(Boolean).join('-') || 'sortie'}`.slice(
     0,
@@ -99,21 +108,27 @@ export async function execute(interaction) {
     .setColor(0xffffff)
     .setTitle('Nouvelle sortie')
     .setDescription(
-      `Clique sur **S’inscrire** pour participer.\n🕒 Fermeture automatique du salon ${`<t:${deleteSec}:R>`}.`,
+      [
+        description ? `${description}\n` : null,
+        '-# Clique sur **Participer** pour t’inscrire ou te désinscrire.',
+      ]
+        .filter(Boolean)
+        .join('\n'),
     )
     .addFields(
       { name: 'Lieu', value: place, inline: true },
       { name: 'Heure', value: time, inline: true },
       { name: 'Organisateur', value: `<@${interaction.user.id}>`, inline: true },
       { name: 'Inscrits (0)', value: 'Personne pour l’instant.', inline: false },
-    );
+    )
+    .setFooter({ text: `🕒 Fermeture automatique du salon le ${closeLabel}` });
 
   const row = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
-      .setCustomId('rdv:join')
-      .setLabel('S’inscrire')
+      .setCustomId('rdv:panel')
+      .setLabel('Participer')
       .setEmoji('🙋')
-      .setStyle(ButtonStyle.Success),
+      .setStyle(ButtonStyle.Primary),
   );
 
   const message = await channel.send({
@@ -124,6 +139,42 @@ export async function execute(interaction) {
   await message.pin().catch(() => {});
 
   scheduleChannelDeletion(channel, deleteAt);
+
+  // Announce the meetup in the dedicated channel with a link back to it.
+  if (config.rdvAnnounceChannelId) {
+    const announceChannel = await interaction.guild.channels
+      .fetch(config.rdvAnnounceChannelId)
+      .catch(() => null);
+
+    if (announceChannel?.isTextBased()) {
+      const announce = new EmbedBuilder()
+        .setColor(0xffffff)
+        .setTitle('📣 Une sortie est organisée !')
+        .setDescription(
+          [
+            `${interaction.user} organise une sortie. Clique pour en savoir plus et t’inscrire 👇`,
+            description ? `\n> ${description}` : null,
+          ]
+            .filter(Boolean)
+            .join('\n'),
+        )
+        .addFields(
+          { name: 'Lieu', value: place, inline: true },
+          { name: 'Heure', value: time, inline: true },
+        )
+        .setFooter({ text: `🕒 Salon fermé automatiquement le ${closeLabel}` });
+
+      const link = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setStyle(ButtonStyle.Link)
+          .setURL(message.url)
+          .setLabel('Voir la sortie')
+          .setEmoji('➡️'),
+      );
+
+      await announceChannel.send({ embeds: [announce], components: [link] }).catch(() => {});
+    }
+  }
 
   await interaction.editReply(`Salon créé : ${channel}`);
 }

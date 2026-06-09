@@ -1,8 +1,8 @@
-import { readdirSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { Client, Collection, Events, GatewayIntentBits } from 'discord.js';
 import { config } from './config.js';
+import { collectCommandPaths } from './loadCommands.js';
 import { registerMemberCount } from './features/memberCount.js';
 import { registerVerification } from './features/verification.js';
 import { registerTempVoice } from './features/tempVoice.js';
@@ -26,12 +26,12 @@ const client = new Client({
 // --- Load commands ---
 client.commands = new Collection();
 const commandsDir = join(__dirname, 'commands');
-for (const file of readdirSync(commandsDir).filter((f) => f.endsWith('.js'))) {
-  const command = await import(pathToFileURL(join(commandsDir, file)).href);
+for (const file of collectCommandPaths(commandsDir)) {
+  const command = await import(pathToFileURL(file).href);
   if ('data' in command && 'execute' in command) {
     client.commands.set(command.data.name, command);
   } else {
-    console.warn(`[warn] ${file} is missing "data" or "execute" and was skipped.`);
+    console.warn(`[warn] ${basename(file)} is missing "data" or "execute" and was skipped.`);
   }
 }
 

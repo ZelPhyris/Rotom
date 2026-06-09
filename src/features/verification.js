@@ -6,6 +6,7 @@ import {
   PermissionFlagsBits,
 } from 'discord.js';
 import { config } from '../config.js';
+import { sendWelcome } from './welcome.js';
 
 /**
  * Newcomer verification flow:
@@ -107,6 +108,7 @@ async function onButton(interaction) {
       content: `✅ ${target} a été validé par ${interaction.user}. Bienvenue ! 🎉`,
       components: [],
     });
+    await sendWelcome(interaction.guild, target);
   } else {
     activeReviews.delete(userId);
     await interaction.update({
