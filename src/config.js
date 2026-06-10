@@ -79,4 +79,8 @@ export const config = {
   classementReminderDay: Number(process.env.CLASSEMENT_REMINDER_DAY || 1),
   // Hour of day (0-23, server time) the reminder is sent. Default: 10h.
   classementReminderHour: Number(process.env.CLASSEMENT_REMINDER_HOUR || 10),
+  // --- Language watch (timeouts in seconds; 0 disables the timeout) ---
+  // Needs the bot to have "Moderate Members" and a role above the target.
+  languageTimeoutMild: Number(process.env.LANGUAGE_TIMEOUT_MILD ?? 10),
+  languageTimeoutStrong: Number(process.env.LANGUAGE_TIMEOUT_STRONG ?? 30),
 };

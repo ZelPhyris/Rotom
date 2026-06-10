@@ -102,6 +102,37 @@ export const COMMAND_HELP = [
     examples: ['/classement-pogo voir stat:Niveau', '/classement-pogo rejoindre', '/classement-pogo quitter'],
   },
   {
+    id: 'clear',
+    name: '/clear',
+    emoji: '🧹',
+    adminOnly: true,
+    short: 'Supprime des messages récents.',
+    description:
+      'Supprime un nombre de messages récents dans le salon, avec un filtre optionnel par membre. Les messages de plus de 14 jours ne peuvent pas être supprimés (limite Discord).',
+    usage: '/clear nombre:<1-100> [membre:@membre]',
+    examples: ['/clear nombre:10', '/clear nombre:50 membre:@Dresseur'],
+  },
+  {
+    id: 'sondage',
+    name: '/sondage',
+    emoji: '📊',
+    short: 'Crée un sondage avec réactions.',
+    description:
+      'Crée un sondage. Sans choix, c’est un Oui/Non (👍/👎). Avec des choix (jusqu’à 10), le bot ajoute une réaction par option.',
+    usage: '/sondage question:<texte> [choix1:…] [choix2:…] …',
+    examples: ['/sondage question:On sort ce soir ?', '/sondage question:Quel raid ? choix1:Mewtwo choix2:Rayquaza'],
+  },
+  {
+    id: 'quiz',
+    name: '/quiz',
+    emoji: '🔍',
+    short: 'Qui est ce Pokémon ? (silhouette)',
+    description:
+      'Affiche la silhouette d’un Pokémon au hasard. Le premier à taper son nom (en français) dans le chat gagne. Réponse révélée après 30 s.',
+    usage: '/quiz',
+    examples: ['/quiz'],
+  },
+  {
     id: 'pendu',
     name: '/pendu',
     emoji: '🎮',
@@ -110,6 +141,24 @@ export const COMMAND_HELP = [
       'Lance une partie de pendu avec un nom de Pokémon (en français). Devine en tapant une lettre dans le chat. 6 erreurs max !',
     usage: '/pendu',
     examples: ['/pendu'],
+  },
+  {
+    id: 'morpion',
+    name: '/morpion',
+    emoji: '⭕',
+    short: 'Défie un membre au morpion.',
+    description: 'Lance une partie de morpion (tic-tac-toe) à 2 joueurs, sur une grille de boutons. ❌ contre ⭕.',
+    usage: '/morpion adversaire:@membre',
+    examples: ['/morpion adversaire:@Dresseur'],
+  },
+  {
+    id: 'devinette',
+    name: '/devinette',
+    emoji: '🎯',
+    short: 'Plus ou moins : devine le nombre.',
+    description: 'Le bot choisit un nombre entre 1 et 100. Devinez dans le chat : il indique plus haut (⬆️) ou plus bas (⬇️). Premier à trouver gagne.',
+    usage: '/devinette',
+    examples: ['/devinette'],
   },
   {
     id: 'help',
@@ -122,16 +171,29 @@ export const COMMAND_HELP = [
   },
 ];
 
+// Commands grouped by category. Each category is shown as an inline column so
+// the overview stays compact instead of one tall list.
+const CATEGORIES = [
+  { name: 'PoGo', ids: ['map', 'set-pogo', 'rdv', 'classement-pogo'] },
+  { name: 'Jeux', ids: ['quiz', 'pendu', 'morpion', 'devinette', 'sondage'] },
+  { name: 'Information', ids: ['userinfo'] },
+  { name: 'Level', ids: ['niveau', 'classement'] },
+  { name: 'Modération', ids: ['clear', 'embed', 'test'] },
+  { name: 'Aide', ids: ['help'] },
+];
+
 export function buildOverviewEmbed() {
   const embed = new EmbedBuilder()
     .setColor(BRAND)
     .setTitle('Aide — Motisma’Pau')
-    .setDescription(
-      'Voici les commandes disponibles. Choisis-en une dans le menu ci-dessous pour voir le détail et des exemples.',
-    );
+    .setDescription('Les commandes par catégorie. Choisis-en une dans le menu ci-dessous pour le détail et des exemples.');
 
-  for (const c of COMMAND_HELP) {
-    embed.addFields({ name: `• ${c.name}${c.adminOnly ? ' 🔒' : ''}`, value: c.short });
+  const byId = new Map(COMMAND_HELP.map((c) => [c.id, c]));
+  for (const cat of CATEGORIES) {
+    const cmds = cat.ids.map((id) => byId.get(id)).filter(Boolean);
+    if (!cmds.length) continue;
+    const value = cmds.map((c) => `${c.name}${c.adminOnly ? ' 🔒' : ''}`).join('\n');
+    embed.addFields({ name: cat.name, value, inline: true });
   }
 
   embed.setFooter({ text: '🔒 = réservé aux administrateurs' });

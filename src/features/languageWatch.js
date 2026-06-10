@@ -1,25 +1,52 @@
 import { Events } from 'discord.js';
+import { config } from '../config.js';
 
 /**
  * Language watch — Motisma reacts to swear words with a Pokémon twist.
  *  - Mild words (putain, merde…) → a fun electric-attack reply.
  *  - Stronger insults (enculé…)  → a sterner "watch your language" reminder.
+ * On top of the reply, the offending member is timed out (Discord "Time out")
+ * for a few seconds so they can't keep typing — no per-reply cooldown needed.
  *
  * Reading message content needs the MessageContent intent (enabled when vision
- * is configured). A per-user cooldown avoids spamming the channel.
+ * is configured). Timing out members needs the "Moderate Members" permission
+ * and the bot's role above the target (admins/owners can't be timed out).
  */
 
 // Word lists are written WITHOUT accents — incoming text is de-accented before
-// matching, so "enculé" → "encule", "ta mère" → "ta mere", etc.
+// matching, so "enculé" → "encule", "ta mère" → "ta mere", etc. Spaces in an
+// entry are ignored at match time (handled like any obfuscation separator).
 const MILD = [
+  // français
   'putain', 'putin', 'ptn', 'merde', 'merdique', 'bordel', 'chier', 'chiant',
   'fait chier', 'con', 'conne', 'connerie', 'saloperie',
+  // espagnol / portugais
+  'mierda', 'joder', 'cono', 'porra', 'droga',
+  // anglais
+  'shit', 'crap', 'damn',
+  // italien / allemand
+  'merda', 'scheisse', 'mist', 'verdammt',
 ];
 
 const STRONG = [
+  // français
   'encule', 'enculer', 'pute', 'putes', 'salope', 'salopard',
   'fdp', 'fils de pute', 'nique', 'niquer', 'ntm', 'connard',
   'connasse', 'batard', 'tapette', 'pede', 'enfoire',
+  // espagnol
+  'puta', 'puto', 'hijo de puta', 'cabron', 'gilipollas', 'pendejo',
+  'maricon', 'verga', 'polla', 'mamon',
+  // anglais
+  'fuck', 'fucking', 'fuckin', 'motherfucker', 'asshole', 'bastard',
+  'dick', 'cunt', 'slut', 'whore', 'faggot', 'bullshit', 'bitch',
+  // italien
+  'cazzo', 'stronzo', 'vaffanculo', 'puttana', 'troia', 'figlio di puttana', 'coglione',
+  // portugais
+  'caralho', 'filho da puta', 'viado',
+  // allemand
+  'arschloch', 'hurensohn', 'fotze', 'wichser', 'fick dich',
+  // turc / arabe (translit.) / russe (translit.)
+  'orospu', 'sik', 'sharmouta', 'sharmoot', 'blyat', 'suka', 'pizdec',
 ];
 
 // Electric attack names (French Pokémon GO) used in the fun replies.
@@ -45,13 +72,36 @@ function pick(arr) {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-function escapeRegex(s) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+// Leetspeak / look-alike substitutions per letter.
+const LEET = {
+  a: '@4', b: '8', c: '(', e: '3', g: '9', i: '1!|', l: '1|', o: '0', s: '5$', t: '7', z: '2',
+};
+const VOWELS = 'aeiouy';
+// Symbols people use to mask a letter (almost always a vowel): "p*te", "m#rde".
+const CENSOR = '*.#%';
+
+// Optional obfuscation junk allowed BETWEEN letters: spaces and censor symbols.
+// It only ever consumes separators — never letters — so real words with letters
+// in between (e.g. "fait de plus" vs "fdp") can't accidentally match.
+const SEP = '[\\s*._\\-]{0,4}';
+
+// Char class for one letter: the letter, its leet variants, and — for vowels —
+// generic censor symbols, so a replaced vowel ("p*te", "c0nnard") still matches.
+function charClass(ch) {
+  let set = ch + (LEET[ch] ?? '');
+  if (VOWELS.includes(ch)) set += CENSOR;
+  return `[${set.replace(/[\\\]^-]/g, '\\$&')}]`;
 }
 
-// Build a single word-boundary regex from a list of (de-accented) words.
+// Letters joined by optional separators → tolerant to "c-o-n", "conn*ard", etc.
+function fuzzy(word) {
+  return [...word.replace(/ /g, '')].map(charClass).join(SEP);
+}
+
+// Build a single word-boundary regex from a list of (de-accented) words,
+// tolerant to leetspeak, censored letters and inserted separators.
 function buildRegex(words) {
-  return new RegExp(`(?:^|[^\\p{L}])(${words.map(escapeRegex).join('|')})(?![\\p{L}])`, 'iu');
+  return new RegExp(`(?:^|[^\\p{L}])(${words.map(fuzzy).join('|')})(?![\\p{L}])`, 'iu');
 }
 
 const STRONG_RE = buildRegex(STRONG);
@@ -60,13 +110,13 @@ const MILD_RE = buildRegex(MILD);
 function normalize(text) {
   return text
     .toLowerCase()
+    .replace(/ß/g, 'ss')
+    .replace(/œ/g, 'oe')
+    .replace(/æ/g, 'ae')
     .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '') // strip accents
+    .replace(/[̀-ͯ]/g, '') // strip accents (works for ñ, ç, ü, é…)
     .replace(/\s+/g, ' ');
 }
-
-const COOLDOWN_MS = 20_000;
-const lastReply = new Map(); // userId -> timestamp
 
 async function onMessage(message) {
   if (!message.inGuild() || message.author.bot) return;
@@ -77,13 +127,22 @@ async function onMessage(message) {
   const mild = !strong && MILD_RE.test(text);
   if (!strong && !mild) return;
 
-  const now = Date.now();
-  const last = lastReply.get(message.author.id) ?? 0;
-  if (now - last < COOLDOWN_MS) return;
-  lastReply.set(message.author.id, now);
+  // Time out the member (Discord "Time out") so they can't keep typing.
+  // Skipped silently for admins/owners or when the bot lacks the right perms.
+  const seconds = strong ? config.languageTimeoutStrong : config.languageTimeoutMild;
+  let timedOut = false;
+  if (seconds > 0 && message.member?.moderatable) {
+    try {
+      await message.member.timeout(seconds * 1000, 'Langage inapproprié (Motisma)');
+      timedOut = true;
+    } catch (error) {
+      console.error('[languageWatch] timeout failed:', error?.message ?? error);
+    }
+  }
 
-  const reply = strong ? pick(STERN_LINES) : pick(FUN_TEMPLATES)(pick(ATTACKS));
-  await message.reply({ content: reply, allowedMentions: { repliedUser: true } }).catch(() => {});
+  const base = strong ? pick(STERN_LINES) : pick(FUN_TEMPLATES)(pick(ATTACKS));
+  const suffix = timedOut ? `\n*— réduit au silence ${seconds}s ⏳*` : '';
+  await message.reply({ content: base + suffix, allowedMentions: { repliedUser: true } }).catch(() => {});
 }
 
 /**
