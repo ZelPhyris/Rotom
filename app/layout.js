@@ -3,7 +3,7 @@
    optionally <footer id="site-footer"></footer>); this fills them and marks the
    active link. Runs before auth.js, which then wires the login button. */
 
-const DISCORD_INVITE = "https://discord.gg/"; // TODO: replace with the real Pau server invite
+const DISCORD_INVITE = "https://discord.gg/bWYwAdXes3";
 const GITHUB_URL = "https://github.com/ZelPhyris/Rotom";
 
 const PAGES = [

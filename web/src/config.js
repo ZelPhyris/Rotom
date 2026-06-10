@@ -1,5 +1,5 @@
 // Public, front-end-only configuration.
-export const DISCORD_INVITE = 'https://discord.gg/'; // TODO: replace with the real Pau server invite
+export const DISCORD_INVITE = 'https://discord.gg/bWYwAdXes3';
 export const GITHUB_URL = 'https://github.com/ZelPhyris/Rotom';
 
 export const NAV = [

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '../auth.jsx';
-import { apiGet, apiPost } from '../api.js';
-import { TEAMS } from '../config.js';
+import { apiGet } from '../api.js';
+import { TEAMS, DISCORD_INVITE } from '../config.js';
 import DiscordLogo from '../components/DiscordLogo.jsx';
 
 const STATUS_LABEL = {
@@ -10,14 +10,22 @@ const STATUS_LABEL = {
   rejected: 'Refusé',
 };
 
+const fmtXp = (n) => (n == null ? '—' : n.toLocaleString('fr-FR'));
+
+function avatarUrl(user) {
+  if (!user?.avatar) return 'https://cdn.discordapp.com/embed/avatars/0.png';
+  return `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=96`;
+}
+
 function Submissions({ items }) {
+  if (items === null) return <p className="empty">Chargement…</p>;
   if (!items.length) return <p className="empty">Aucune déclaration pour l'instant.</p>;
   return (
     <ul className="sub-list">
       {items.map((s) => (
         <li key={s.id} className={`sub-item sub-${s.status}`}>
           <span className="sub-main">
-            Niveau {s.level ?? '—'} · {s.totalXp != null ? s.totalXp.toLocaleString('fr-FR') : '—'} XP
+            Niveau {s.level ?? '—'} · {fmtXp(s.totalXp)} XP
           </span>
           <span className="sub-status">{STATUS_LABEL[s.status] ?? s.status}</span>
         </li>
@@ -28,23 +36,22 @@ function Submissions({ items }) {
 
 export default function Profil() {
   const { user, loading, login } = useAuth();
-  const [form, setForm] = useState({ level: '', totalXp: '', team: '' });
-  const [subs, setSubs] = useState([]);
-  const [msg, setMsg] = useState(null);
-  const [busy, setBusy] = useState(false);
+  const [subs, setSubs] = useState(null);
 
   useEffect(() => {
-    if (user) apiGet('/api/stats/me').then((d) => setSubs(d.submissions)).catch(() => {});
+    if (user) apiGet('/api/stats/me').then((d) => setSubs(d.submissions)).catch(() => setSubs([]));
   }, [user]);
 
-  if (loading) return <div className="page"><p className="empty">Chargement…</p></div>;
+  if (loading) {
+    return <div className="page"><p className="empty">Chargement…</p></div>;
+  }
 
   if (!user) {
     return (
       <div className="page">
         <div className="page-head">
           <h1>Ton profil</h1>
-          <p>Connecte-toi avec Discord pour déclarer tes stats et apparaître au classement.</p>
+          <p>Connecte-toi avec Discord pour voir tes stats et apparaître au classement.</p>
         </div>
         <button type="button" className="btn-discord" onClick={login}>
           <DiscordLogo /> Se connecter avec Discord
@@ -53,69 +60,57 @@ export default function Profil() {
     );
   }
 
-  const submit = async (e) => {
-    e.preventDefault();
-    setMsg(null);
-    setBusy(true);
-    try {
-      const payload = {
-        level: form.level ? Number(form.level) : null,
-        totalXp: form.totalXp ? Number(form.totalXp) : null,
-        team: form.team || null,
-      };
-      await apiPost('/api/stats', payload);
-      setMsg({ ok: true, text: 'Stats envoyées ! Un modérateur va les valider.' });
-      setForm({ level: '', totalXp: '', team: '' });
-      const d = await apiGet('/api/stats/me');
-      setSubs(d.submissions);
-    } catch (err) {
-      setMsg({ ok: false, text: 'Échec de l\'envoi : ' + err.message });
-    } finally {
-      setBusy(false);
-    }
-  };
+  const approved = (subs || []).find((s) => s.status === 'approved');
+  const team = approved ? TEAMS[approved.team] : null;
 
   return (
     <div className="page">
-      <div className="page-head">
-        <h1>Salut {user.username} 👋</h1>
-        <p>Déclare tes stats en jeu pour rejoindre le classement. Une capture de ton profil
-          peut t'être demandée pour la validation.</p>
+      <div className="profile-header">
+        <img className="profile-avatar" src={avatarUrl(user)} alt="" width="72" height="72" />
+        <div>
+          <h1 className="profile-name">{user.username}</h1>
+          <p className="profile-sub">Dresseur de la communauté POGO PAU</p>
+        </div>
       </div>
 
-      <form className="stat-form" onSubmit={submit}>
-        <div className="field">
-          <label htmlFor="level">Niveau (1–50)</label>
-          <input
-            id="level" type="number" min="1" max="50" value={form.level}
-            onChange={(e) => setForm({ ...form, level: e.target.value })}
-          />
-        </div>
-        <div className="field">
-          <label htmlFor="xp">XP total</label>
-          <input
-            id="xp" type="number" min="0" value={form.totalXp}
-            onChange={(e) => setForm({ ...form, totalXp: e.target.value })}
-          />
-        </div>
-        <div className="field">
-          <label htmlFor="team">Équipe</label>
-          <select
-            id="team" value={form.team}
-            onChange={(e) => setForm({ ...form, team: e.target.value })}
-          >
-            <option value="">—</option>
-            {Object.entries(TEAMS).map(([key, t]) => (
-              <option key={key} value={key}>{t.label}</option>
-            ))}
-          </select>
-        </div>
-        <button type="submit" className="btn-primary" disabled={busy}>
-          {busy ? 'Envoi…' : 'Déclarer mes stats'}
-        </button>
-      </form>
+      <div className="trainer-card">
+        {approved ? (
+          <>
+            <div className="trainer-stat">
+              <span className="trainer-num">{approved.level ?? '—'}</span>
+              <span className="trainer-lab">Niveau</span>
+            </div>
+            <div className="trainer-stat">
+              <span className="trainer-num">{fmtXp(approved.totalXp)}</span>
+              <span className="trainer-lab">XP total</span>
+            </div>
+            <div className="trainer-stat">
+              {team ? (
+                <span className="team-pill" style={{ background: team.color }}>{team.label}</span>
+              ) : (
+                <span className="team-pill team-none">—</span>
+              )}
+              <span className="trainer-lab">Équipe</span>
+            </div>
+          </>
+        ) : (
+          <p className="empty" style={{ margin: 0 }}>
+            Aucune stat validée pour l'instant — déclare-les via le bot pour entrer au classement.
+          </p>
+        )}
+      </div>
 
-      {msg && <p className={msg.ok ? 'form-ok' : 'form-err'}>{msg.text}</p>}
+      <div className="declare-box">
+        <h2>Déclarer ou mettre à jour mes stats</h2>
+        <p>
+          La déclaration se fait sur Discord : le <strong>bot t'envoie un message privé</strong>, tu
+          réponds avec les <strong>captures de ton profil et de tes médailles</strong>, et il
+          enregistre tout puis met à jour le classement une fois validé par un modérateur.
+        </p>
+        <a className="btn-primary" href={DISCORD_INVITE} target="_blank" rel="noreferrer">
+          Ouvrir le Discord
+        </a>
+      </div>
 
       <h2 className="sub-title">Mes déclarations</h2>
       <Submissions items={subs} />

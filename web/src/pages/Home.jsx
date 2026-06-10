@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom';
 import { DISCORD_INVITE } from '../config.js';
+import Icon from '../components/Icons.jsx';
 
 const FEATURES = [
-  { to: '/carte', emoji: '🗺️', title: 'La carte des secteurs', text: 'Visualise où la communauté joue, secteur par secteur, sans jamais exposer une adresse.' },
-  { to: '/classement', emoji: '🏆', title: 'Le classement', text: 'Le top des dresseurs par niveau et XP en jeu, validé par les modérateurs.' },
-  { to: '/communaute', emoji: '👥', title: 'La communauté', text: 'Les chiffres vivants de Pau : combien on est, où, et à quel rythme on joue.' },
-  { to: '/guides', emoji: '📘', title: 'Les guides', text: 'Bien démarrer, trouver les bons spots à raids, participer à une sortie.' },
+  { to: '/carte', icon: 'map', title: 'La carte des secteurs', text: 'Visualise où la communauté joue, secteur par secteur, sans jamais exposer une adresse.' },
+  { to: '/classement', icon: 'trophy', title: 'Le classement', text: 'Le top des dresseurs par niveau et XP en jeu, validé par les modérateurs.' },
+  { to: '/communaute', icon: 'users', title: 'La communauté', text: 'Les chiffres vivants de Pau : combien on est, où, et à quel rythme on joue.' },
+  { to: '/guides', icon: 'book', title: 'Les guides', text: 'Bien démarrer, trouver les bons spots à raids, participer à une sortie.' },
 ];
 
 export default function Home() {
@@ -35,30 +36,45 @@ export default function Home() {
         </div>
       </section>
 
+      <section className="intro" id="apropos">
+        <div className="intro-inner">
+          <figure className="intro-photo">
+            <div className="intro-frame">
+              <img src="/pau.jpg" alt="Le kiosque à musique du parc Beaumont, à Pau" loading="lazy" />
+            </div>
+            <figcaption className="intro-credit">
+              Kiosque à musique, parc Beaumont, Pau — © Adrien Basse-Cathalinat / Ville de Pau
+            </figcaption>
+          </figure>
+          <div className="intro-text">
+            <h2>C'est quoi, POGO PAU ?</h2>
+            <p>
+              Avant tout, c'est la <strong>communauté des dresseurs Pokémon GO de Pau</strong> et de ses
+              environs. Ici, on joue ensemble plutôt que chacun dans son coin : sorties sur le terrain,
+              <strong> raids</strong> montés à plusieurs, échanges et coups de main entre joueurs de tous niveaux,
+              dans la bonne humeur.
+            </p>
+            <p>
+              Pour faciliter tout ça, un bot Discord et ce site accompagnent la communauté au quotidien :
+              on y organise les <strong>sorties et les raids</strong>, on suit le{' '}
+              <strong>classement</strong> des dresseurs et on garde le lien entre tout le monde. Débutant ou
+              vétéran, il y a toujours quelqu'un avec qui jouer près de chez toi.
+            </p>
+          </div>
+        </div>
+      </section>
+
       <section className="cards-section">
         <div className="cards">
           {FEATURES.map((f) => (
             <Link key={f.to} to={f.to} className="card">
-              <div className="card-emoji">{f.emoji}</div>
+              <div className="card-emoji">
+                <Icon name={f.icon} />
+              </div>
               <h3>{f.title}</h3>
               <p>{f.text}</p>
             </Link>
           ))}
-        </div>
-      </section>
-
-      <section className="about" id="apropos">
-        <div className="about-inner">
-          <h2>C'est quoi, POGO PAU ?</h2>
-          <p>
-            POGO PAU est l'outil de la communauté Pokémon GO de <strong>Pau</strong> : un bot Discord et
-            ce site, pensés pour que personne ne joue dans son coin. On y voit où sont les autres
-            dresseurs, on organise des sorties et on suit la progression de chacun.
-          </p>
-          <p>
-            La vie privée passe avant tout : <strong>aucune adresse</strong> n'est affichée, et un
-            secteur ne révèle son nombre de joueurs qu'à partir d'un certain seuil.
-          </p>
         </div>
       </section>
     </>
