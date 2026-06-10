@@ -27,6 +27,11 @@ export default function Home() {
               Voir la carte
             </Link>
           </div>
+          <div className="team-dots">
+            <span><i className="m" /> Sagesse</span>
+            <span><i className="v" /> Bravoure</span>
+            <span><i className="i" /> Intuition</span>
+          </div>
         </div>
       </section>
 
