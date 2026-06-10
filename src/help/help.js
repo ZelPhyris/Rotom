@@ -92,6 +92,16 @@ export const COMMAND_HELP = [
     examples: ['/classement'],
   },
   {
+    id: 'classement-pogo',
+    name: '/classement-pogo',
+    emoji: '🔴',
+    short: 'Classement Pokémon GO (niveau, XP, Pokédex).',
+    description:
+      'Classement de la communauté par stats Pokémon GO. Rejoins-le, et mets tes stats à jour en envoyant une capture de ton profil au bot en MP — il les lit automatiquement. Un rappel est envoyé chaque mois.',
+    usage: '/classement-pogo <voir|rejoindre|quitter> [stat]',
+    examples: ['/classement-pogo voir stat:Niveau', '/classement-pogo rejoindre', '/classement-pogo quitter'],
+  },
+  {
     id: 'pendu',
     name: '/pendu',
     emoji: '🎮',

@@ -1,6 +1,6 @@
 import { basename, dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { Client, Collection, Events, GatewayIntentBits, Partials } from 'discord.js';
+import { ActivityType, Client, Collection, Events, GatewayIntentBits, Partials } from 'discord.js';
 import { config } from './config.js';
 import { collectCommandPaths } from './loadCommands.js';
 import { initDb } from './db.js';
@@ -12,6 +12,8 @@ import { registerHelpControls } from './features/helpControls.js';
 import { registerLeveling } from './features/leveling.js';
 import { registerForumHeart } from './features/forumHeart.js';
 import { registerMoveControls } from './features/moveControls.js';
+import { registerClassement } from './features/classement.js';
+import { registerLanguageWatch } from './features/languageWatch.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -26,6 +28,8 @@ const intents = [
   GatewayIntentBits.GuildMessageReactions,
   // Non-privileged — required for the "join to create" temp voice channels.
   GatewayIntentBits.GuildVoiceStates,
+  // Non-privileged — lets participants DM the bot a screenshot to update stats.
+  GatewayIntentBits.DirectMessages,
 ];
 
 // Privileged — only declared when vision is configured, because declaring an
@@ -53,9 +57,47 @@ for (const file of collectCommandPaths(commandsDir)) {
   }
 }
 
+// Turn the configured emoji into a presence emoji object. Accepts a unicode
+// emoji ("🏃") or a custom one written "name:id". Empty → no emoji.
+function parseEmoji(raw) {
+  if (!raw) return undefined;
+  const custom = /^(\w+):(\d+)$/.exec(raw);
+  if (custom) return { name: custom[1], id: custom[2] };
+  return { name: raw };
+}
+
+// Map the configured verb to a discord.js ActivityType.
+const ACTIVITY_TYPES = {
+  playing: ActivityType.Playing,
+  watching: ActivityType.Watching,
+  listening: ActivityType.Listening,
+  competing: ActivityType.Competing,
+  custom: ActivityType.Custom,
+};
+
 // --- Events ---
 client.once(Events.ClientReady, async (c) => {
   console.log(`Ready. Logged in as ${c.user.tag}.`);
+  // Build up to two activities: a custom status ("bubble") and a "Joue à …"
+  // activity. Discord usually renders only the first for bots, so the custom
+  // status comes first. For a custom status, Discord requires
+  // name === "Custom Status"; the visible text lives in `state`.
+  const activities = [];
+  if (config.presenceText) {
+    activities.push({
+      name: 'Custom Status',
+      state: config.presenceText,
+      type: ActivityType.Custom,
+      emoji: parseEmoji(config.presenceEmoji),
+    });
+  }
+  if (config.presenceGame) {
+    activities.push({
+      name: config.presenceGame,
+      type: ACTIVITY_TYPES[config.presenceGameType] ?? ActivityType.Playing,
+    });
+  }
+  c.user.setPresence({ status: config.presenceStatus, activities });
   await initDb().catch((err) => console.error('[db] Initialization failed:', err));
 });
 
@@ -68,6 +110,8 @@ registerHelpControls(client);
 registerLeveling(client);
 registerForumHeart(client);
 registerMoveControls(client);
+registerClassement(client);
+registerLanguageWatch(client);
 
 client.on(Events.InteractionCreate, async (interaction) => {
   // Slash commands and message context-menu commands are both dispatched by name.

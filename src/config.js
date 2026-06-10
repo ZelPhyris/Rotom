@@ -58,4 +58,25 @@ export const config = {
   levelRoles: parseLevelRoles(process.env.LEVEL_ROLES),
   // Forum channel where the bot ❤️-reacts to posted images.
   forumHeartChannelId: process.env.FORUM_HEART_CHANNEL_ID || '1513801356509708489',
+  // Custom status (the "bubble" line, no verb). Empty to disable.
+  presenceText: process.env.PRESENCE_TEXT || '/help • Pokémon GO Pau ⚡',
+  // Status emoji shown before the custom status. A unicode emoji ("🏃") or a
+  // custom one as "name:id" (e.g. "roucoul:123456789012345678"). Empty for none.
+  presenceEmoji: process.env.PRESENCE_EMOJI || '',
+  // Rich-presence-style activity (the "Joue à …" line). Empty to disable.
+  // NOTE: bots display only ONE activity and the custom status wins, so this is
+  // off by default. The "Joue à" verb is mandatory and no image shows for bots.
+  presenceGame: process.env.PRESENCE_GAME || '',
+  // Verb for the activity above: playing | watching | listening | competing.
+  presenceGameType: (process.env.PRESENCE_GAME_TYPE || 'playing').toLowerCase(),
+  // Online state: online | idle | dnd | invisible.
+  presenceStatus: (process.env.PRESENCE_STATUS || 'online').toLowerCase(),
+  // --- Monthly PoGo classement ---
+  // Optional role synced with classement participation (assigned on opt-in).
+  // Empty = opt-in is tracked in the DB only (works without the role).
+  classementRoleId: process.env.CLASSEMENT_ROLE_ID || '',
+  // Day of the month (1-28) the reminder DM is sent. Default: 1st.
+  classementReminderDay: Number(process.env.CLASSEMENT_REMINDER_DAY || 1),
+  // Hour of day (0-23, server time) the reminder is sent. Default: 10h.
+  classementReminderHour: Number(process.env.CLASSEMENT_REMINDER_HOUR || 10),
 };

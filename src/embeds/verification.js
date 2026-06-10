@@ -13,9 +13,12 @@ export function buildVerificationEmbed() {
     .setTitle('👋 Bienvenue ! Une dernière étape')
     .setDescription(
       [
-        'Pour accéder au serveur, poste ici une **capture d’écran de ton profil Pokémon GO** (l’écran de profil de dresseur).',
+        'Pour accéder au serveur, poste ici **deux captures d’écran** de Pokémon GO :',
         '',
-        'Un membre de l’équipe la validera, et tu auras alors accès à l’ensemble des salons.',
+        '📸 **1.** ton **profil de dresseur** (avec ton pseudo),',
+        '📸 **2.** ton **code ami** (l’écran « Ajouter un ami » avec les 12 chiffres).',
+        '',
+        'Un membre de l’équipe validera, et ton pseudo et ton code ami seront enregistrés automatiquement. Tu auras alors accès à l’ensemble des salons.',
         '',
         'Merci, et à très vite sur le terrain ! 🎮',
       ].join('\n'),
