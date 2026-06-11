@@ -1,5 +1,9 @@
 import { SlashCommandBuilder, PermissionFlagsBits } from 'discord.js';
 
+// Registered globally (not guild-scoped) so it's also usable in the bot's DMs,
+// where admins clean up after testing. See src/deploy-commands.js.
+export const global = true;
+
 export const data = new SlashCommandBuilder()
   .setName('clear')
   .setDescription('Supprime des messages récents (modérateurs).')
@@ -12,13 +16,46 @@ export const data = new SlashCommandBuilder()
       .setRequired(true),
   )
   .addUserOption((opt) =>
-    opt.setName('membre').setDescription('Ne supprimer que les messages de ce membre.'),
+    opt.setName('membre').setDescription('Ne supprimer que les messages de ce membre (serveur uniquement).'),
   )
   .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
-  .setDMPermission(false);
+  .setDMPermission(true);
+
+// In a DM, Discord only lets a bot delete its OWN messages (and one by one —
+// bulkDelete doesn't exist on DM channels). So /clear in DM wipes the bot's
+// replies (stats embeds, errors…) but never the user's own uploads.
+async function clearOwnDmMessages(interaction, count) {
+  await interaction.deferReply();
+  const fetched = await interaction.channel.messages.fetch({ limit: 100 });
+  const mine = [...fetched.values()]
+    .filter((m) => m.author.id === interaction.client.user.id)
+    .slice(0, count);
+
+  let deleted = 0;
+  for (const m of mine) {
+    try {
+      await m.delete();
+      deleted++;
+    } catch {
+      // Message already gone or too old — skip.
+    }
+  }
+
+  await interaction.editReply(
+    deleted
+      ? `🧹 ${deleted} message(s) du bot supprimé(s). *(En MP je ne peux pas supprimer tes propres messages.)*`
+      : 'Aucun message du bot à supprimer ici.',
+  );
+}
 
 export async function execute(interaction) {
   const count = interaction.options.getInteger('nombre', true);
+
+  if (!interaction.inGuild()) {
+    await clearOwnDmMessages(interaction, count);
+    return;
+  }
+
   const member = interaction.options.getUser('membre');
 
   const me = interaction.guild.members.me;

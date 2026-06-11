@@ -34,12 +34,18 @@ async function generateWithRetry(params, attempts = 4) {
 }
 
 const STATS_PROMPT = [
-  'Regarde cette capture d’écran du profil Pokémon GO. Extrais, uniquement s’ils sont visibles :',
-  '- le niveau du dresseur (un entier de 1 à 50, souvent près de l’avatar),',
-  '- l’XP totale (les points d’expérience cumulés, parfois écrits "12 345 678"),',
-  '- le nombre de Pokémon capturés (statistique "Pokémon capturés").',
-  'Réponds STRICTEMENT en JSON : {"level": number, "total_xp": number, "caught": number}.',
-  'Mets 0 pour toute valeur absente de l’image.',
+  'Tu lis une capture d’écran Pokémon GO (écran de profil ou liste de statistiques).',
+  'Extrais chaque valeur UNIQUEMENT si elle est clairement visible sur l’image :',
+  '- "level" : le grand nombre sous le mot "NIVEAU", près de l’avatar (un entier, ex. 38, 50, 51…). Lis-le tel quel, ne le plafonne pas.',
+  '- "level_xp_current" : à côté du niveau, le nombre AVANT le "/" dans la barre d’XP (XP dans le niveau actuel, ex. "654 012 / 1 580 000" → 654012).',
+  '- "level_xp_needed" : dans cette même barre, le nombre APRÈS le "/" (XP requis pour ce niveau, ex. "654 012 / 1 580 000" → 1580000).',
+  '- "total_xp" : le "Total de PX" / "Total XP" cumulé, dans la liste de statistiques (un grand nombre, ex. "14 847 012").',
+  '- "caught" : "Pokémon capturés" / "Pokémon attrapés" (un entier).',
+  '- "distance_km" : "Distance parcourue" / "Distance marchée" en kilomètres (un nombre décimal, ex. "376,3 km" → 376.3).',
+  '- "pokestops" : "PokéStops visités" (un entier).',
+  'Ignore les séparateurs de milliers (espaces, points, virgules). La virgule décimale du km devient un point.',
+  'Réponds STRICTEMENT en JSON : {"level": number, "level_xp_current": number, "level_xp_needed": number, "total_xp": number, "caught": number, "distance_km": number, "pokestops": number}.',
+  'Mets 0 (ou 0.0 pour la distance) pour toute valeur que tu ne vois pas. N’invente jamais une valeur.',
 ].join('\n');
 
 /** Fetch an image URL and return { data: base64, mimeType }. */
@@ -80,14 +86,45 @@ export async function extractProfile(imageUrl) {
   }
 }
 
+const EMPTY_STATS = {
+  level: null,
+  levelXp: null,
+  levelXpMax: null,
+  xp: null,
+  pokedex: null,
+  distance: null,
+  pokestops: null,
+};
+
+// Strip thousands separators (spaces/dots) and round to an integer > 0, else null.
+function toInt(v) {
+  const cleaned = String(v ?? '').replace(/[^\d]/g, '');
+  const n = Math.round(Number(cleaned));
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+// Parse a km distance: tolerate "1 234,5" (FR) and "1,234.5" (EN) → 1234.5.
+function toKm(v) {
+  let s = String(v ?? '').replace(/[^\d.,]/g, '');
+  if (s.includes(',') && s.includes('.')) {
+    // The last separator is the decimal one; the other groups thousands.
+    s = s.lastIndexOf(',') > s.lastIndexOf('.') ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, '');
+  } else if (s.includes(',')) {
+    s = s.replace(',', '.');
+  }
+  const n = Number(s);
+  return Number.isFinite(n) && n > 0 ? Math.round(n * 10) / 10 : null;
+}
+
 /**
- * Extract Pokémon GO stats (level, total XP, caught count) from a screenshot.
+ * Extract Pokémon GO stats from a profile/stats screenshot.
  * Absent or implausible values come back null.
  * @param {string} imageUrl
- * @returns {Promise<{ level: number|null, xp: number|null, pokedex: number|null }>}
+ * @returns {Promise<{ level: number|null, xp: number|null, pokedex: number|null,
+ *   distance: number|null, pokestops: number|null }>}
  */
 export async function extractStats(imageUrl) {
-  if (!ai) return { level: null, xp: null, pokedex: null };
+  if (!ai) return { ...EMPTY_STATS };
 
   try {
     const { data, mimeType } = await fetchImage(imageUrl);
@@ -98,21 +135,22 @@ export async function extractStats(imageUrl) {
     });
 
     const text = response.text;
-    if (!text) return { level: null, xp: null, pokedex: null };
+    if (!text) return { ...EMPTY_STATS };
 
     const parsed = JSON.parse(text);
-    const toInt = (v) => {
-      const n = Math.round(Number(String(v ?? '').replace(/\s/g, '')));
-      return Number.isFinite(n) && n > 0 ? n : null;
-    };
     const lvl = toInt(parsed.level);
     return {
-      level: lvl && lvl >= 1 && lvl <= 50 ? lvl : null,
+      // Read the level as shown (no 50 cap — the game goes higher); sanity-bound only.
+      level: lvl && lvl >= 1 && lvl <= 100 ? lvl : null,
+      levelXp: toInt(parsed.level_xp_current),
+      levelXpMax: toInt(parsed.level_xp_needed),
       xp: toInt(parsed.total_xp),
       pokedex: toInt(parsed.caught),
+      distance: toKm(parsed.distance_km),
+      pokestops: toInt(parsed.pokestops),
     };
   } catch (error) {
     console.error('[vision] Stats extraction failed:', error);
-    return { level: null, xp: null, pokedex: null };
+    return { ...EMPTY_STATS };
   }
 }

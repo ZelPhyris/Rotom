@@ -3,16 +3,19 @@ import { buildReglementEmbed } from '../embeds/reglement.js';
 import { buildVerificationEmbed } from '../embeds/verification.js';
 import { buildSuggestionsEmbed } from '../embeds/suggestions.js';
 import { buildPresentationEmbed } from '../embeds/presentation.js';
+import { buildClassementEmbed, buildClassementComponents } from '../embeds/classement.js';
 
 /**
  * Registry of publishable info embeds. To add one: create its builder in
  * src/embeds/, then add an entry here (the `value` becomes the choice).
+ * `components` is optional (e.g. an embed with an interactive button).
  */
 const EMBEDS = {
   reglement: { label: 'Règlement', build: buildReglementEmbed },
   verification: { label: 'Vérification', build: buildVerificationEmbed },
   suggestions: { label: 'Suggestions', build: buildSuggestionsEmbed },
   presentation: { label: 'Présentation', build: buildPresentationEmbed },
+  classement: { label: 'Classement PoGo', build: buildClassementEmbed, components: buildClassementComponents },
 };
 
 export const data = new SlashCommandBuilder()
@@ -40,6 +43,7 @@ export async function execute(interaction) {
   }
 
   const embed = await entry.build(interaction);
-  await interaction.channel.send({ embeds: [embed] });
+  const components = entry.components ? [await entry.components(interaction)] : [];
+  await interaction.channel.send({ embeds: [embed], components });
   await interaction.reply({ content: `Embed « ${entry.label} » publié ici. ✅`, ephemeral: true });
 }

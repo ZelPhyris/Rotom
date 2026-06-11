@@ -6,15 +6,13 @@ import { hasVision } from '../features/visionExtract.js';
 const MEDALS = ['🥇', '🥈', '🥉'];
 
 // The three ranked stats. `column` matches the DB column whitelist in topPogoStat.
+const fr = (v) => v.toLocaleString('fr-FR');
 const STATS = {
   niveau: { column: 'pogo_level', label: 'Niveau', emoji: '⭐', fmt: (v) => `niveau **${v}**` },
-  xp: { column: 'pogo_xp', label: 'XP totale', emoji: '✨', fmt: (v) => `**${v.toLocaleString('fr-FR')}** XP` },
-  pokedex: {
-    column: 'pogo_pokedex',
-    label: 'Pokémon capturés',
-    emoji: '🔴',
-    fmt: (v) => `**${v.toLocaleString('fr-FR')}** capturés`,
-  },
+  xp: { column: 'pogo_xp', label: 'XP totale', emoji: '✨', fmt: (v) => `**${fr(v)}** XP` },
+  pokedex: { column: 'pogo_pokedex', label: 'Pokémon capturés', emoji: '🔴', fmt: (v) => `**${fr(v)}** capturés` },
+  distance: { column: 'pogo_distance', label: 'Distance parcourue', emoji: '👟', fmt: (v) => `**${fr(v)}** km` },
+  pokestops: { column: 'pogo_pokestops', label: 'PokéStops visités', emoji: '🛑', fmt: (v) => `**${fr(v)}** PokéStops` },
 };
 
 export const data = new SlashCommandBuilder()
@@ -32,6 +30,8 @@ export const data = new SlashCommandBuilder()
             { name: 'Niveau', value: 'niveau' },
             { name: 'XP totale', value: 'xp' },
             { name: 'Pokémon capturés', value: 'pokedex' },
+            { name: 'Distance parcourue', value: 'distance' },
+            { name: 'PokéStops visités', value: 'pokestops' },
           ),
       ),
   )

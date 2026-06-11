@@ -72,9 +72,9 @@ export const config = {
   // Online state: online | idle | dnd | invisible.
   presenceStatus: (process.env.PRESENCE_STATUS || 'online').toLowerCase(),
   // --- Monthly PoGo classement ---
-  // Optional role synced with classement participation (assigned on opt-in).
-  // Empty = opt-in is tracked in the DB only (works without the role).
-  classementRoleId: process.env.CLASSEMENT_ROLE_ID || '',
+  // Role synced with classement participation (assigned on opt-in / via the
+  // participation embed button). Empty = opt-in is tracked in the DB only.
+  classementRoleId: process.env.CLASSEMENT_ROLE_ID || '1514520752853090345',
   // Day of the month (1-28) the reminder DM is sent. Default: 1st.
   classementReminderDay: Number(process.env.CLASSEMENT_REMINDER_DAY || 1),
   // Hour of day (0-23, server time) the reminder is sent. Default: 10h.
