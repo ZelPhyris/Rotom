@@ -1,9 +1,11 @@
+import { lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar.jsx';
 import HelpBadge from './components/HelpBadge.jsx';
 import Splash from './components/Splash.jsx';
 import Home from './pages/Home.jsx';
-import Carte from './pages/Carte.jsx';
+// MapLibre is heavy — only load it when the map route is visited.
+const Carte = lazy(() => import('./pages/Carte.jsx'));
 import Classement from './pages/Classement.jsx';
 import Communaute from './pages/Communaute.jsx';
 import Guides from './pages/Guides.jsx';
@@ -20,7 +22,14 @@ export default function App() {
       <main>
         <Routes>
           <Route path="/" element={<Home />} />
-          <Route path="/carte" element={<Carte />} />
+          <Route
+            path="/carte"
+            element={
+              <Suspense fallback={<div className="map-loading">Chargement de la carte…</div>}>
+                <Carte />
+              </Suspense>
+            }
+          />
           <Route path="/classement" element={<Classement />} />
           <Route path="/communaute" element={<Communaute />} />
           <Route path="/guides" element={<Guides />} />

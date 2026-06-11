@@ -1,5 +1,5 @@
 import { requireUser, requireAdmin } from '../auth.js';
-import { submitStats, mySubmissions, pendingStats, reviewStats } from '../db.js';
+import { submitStats, mySubmissions, pendingStats, reviewStats, profileStats } from '../db.js';
 
 const isInt = (v, min, max) =>
   Number.isInteger(v) && v >= min && v <= max;
@@ -37,6 +37,11 @@ export async function statsRoutes(app) {
   // The caller's own submission history.
   app.get('/api/stats/me', { preHandler: requireUser }, async (request) => {
     return { submissions: await mySubmissions(request.user.id) };
+  });
+
+  // The caller's own in-game profile (stats the bot recorded).
+  app.get('/api/profile/me', { preHandler: requireUser }, async (request) => {
+    return { profile: await profileStats(request.user.id) };
   });
 
   // --- Moderation ---

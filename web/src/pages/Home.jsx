@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { DISCORD_INVITE } from '../config.js';
+import { DISCORD_INVITE, CAMPFIRE_URL } from '../config.js';
 import Icon from '../components/Icons.jsx';
 
 const FEATURES = [
@@ -14,6 +14,7 @@ export default function Home() {
     <>
       <section className="hero">
         <div className="hero-inner">
+          <img className="hero-logo" src="/pokemon-go-logo.webp" alt="Pokémon GO" width="320" height="200" />
           <span className="hero-badge">Communauté Pokémon GO · Pau</span>
           <h1>On n'est jamais seul à jouer près de chez soi.</h1>
           <p className="hero-lead">
@@ -23,6 +24,9 @@ export default function Home() {
           <div className="hero-actions">
             <a className="btn-primary" href={DISCORD_INVITE} target="_blank" rel="noreferrer">
               Rejoindre le Discord
+            </a>
+            <a className="btn-campfire" href={CAMPFIRE_URL} target="_blank" rel="noreferrer">
+              Groupe Campfire
             </a>
             <Link className="btn-ghost" to="/carte">
               Voir la carte

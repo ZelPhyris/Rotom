@@ -3,6 +3,7 @@ import { NavLink, Link } from 'react-router-dom';
 import { NAV } from '../config.js';
 import { useAuth } from '../auth.jsx';
 import DiscordLogo from './DiscordLogo.jsx';
+import ThemeToggle from './ThemeToggle.jsx';
 
 function avatarUrl(user) {
   if (!user?.avatar) return 'https://cdn.discordapp.com/embed/avatars/0.png';
@@ -29,10 +30,13 @@ export default function Navbar() {
       </nav>
 
       <div className="nav-right">
+        <ThemeToggle />
         {loading ? null : user ? (
           <div className="user-menu">
-            <img className="avatar" src={avatarUrl(user)} alt="" width="28" height="28" />
-            <span className="user-name">{user.username}</span>
+            <Link to="/profil" className="user-link" onClick={() => setOpen(false)}>
+              <img className="avatar" src={avatarUrl(user)} alt="" width="28" height="28" />
+              <span className="user-name">{user.username}</span>
+            </Link>
             <button type="button" className="logout-btn" onClick={logout}>
               Déconnexion
             </button>

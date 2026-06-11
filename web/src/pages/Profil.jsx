@@ -4,42 +4,28 @@ import { apiGet } from '../api.js';
 import { TEAMS, DISCORD_INVITE } from '../config.js';
 import DiscordLogo from '../components/DiscordLogo.jsx';
 
-const STATUS_LABEL = {
-  pending: 'En attente',
-  approved: 'Validé',
-  rejected: 'Refusé',
-};
-
-const fmtXp = (n) => (n == null ? '—' : n.toLocaleString('fr-FR'));
+const fmtInt = (n) => (n == null ? '—' : n.toLocaleString('fr-FR'));
+const fmtKm = (n) =>
+  n == null ? '—' : `${n.toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} km`;
 
 function avatarUrl(user) {
   if (!user?.avatar) return 'https://cdn.discordapp.com/embed/avatars/0.png';
   return `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=96`;
 }
 
-function Submissions({ items }) {
-  if (items === null) return <p className="empty">Chargement…</p>;
-  if (!items.length) return <p className="empty">Aucune déclaration pour l'instant.</p>;
-  return (
-    <ul className="sub-list">
-      {items.map((s) => (
-        <li key={s.id} className={`sub-item sub-${s.status}`}>
-          <span className="sub-main">
-            Niveau {s.level ?? '—'} · {fmtXp(s.totalXp)} XP
-          </span>
-          <span className="sub-status">{STATUS_LABEL[s.status] ?? s.status}</span>
-        </li>
-      ))}
-    </ul>
-  );
+function fmtDate(iso) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
 export default function Profil() {
   const { user, loading, login } = useAuth();
-  const [subs, setSubs] = useState(null);
+  const [profile, setProfile] = useState(undefined); // undefined = loading, null = none
 
   useEffect(() => {
-    if (user) apiGet('/api/stats/me').then((d) => setSubs(d.submissions)).catch(() => setSubs([]));
+    if (user) apiGet('/api/profile/me').then((d) => setProfile(d.profile)).catch(() => setProfile(null));
   }, [user]);
 
   if (loading) {
@@ -60,60 +46,86 @@ export default function Profil() {
     );
   }
 
-  const approved = (subs || []).find((s) => s.status === 'approved');
-  const team = approved ? TEAMS[approved.team] : null;
+  const team = profile ? TEAMS[profile.team] : null;
+  const hasStats =
+    profile &&
+    [profile.level, profile.totalXp, profile.pokedex, profile.distance, profile.pokestops].some((v) => v != null);
+
+  const stats = [
+    { lab: 'Niveau', val: profile?.level ?? '—' },
+    { lab: 'XP total', val: fmtInt(profile?.totalXp) },
+    { lab: 'Distance', val: fmtKm(profile?.distance) },
+    { lab: 'Pokémon attrapés', val: fmtInt(profile?.pokedex) },
+    { lab: 'PokéStops', val: fmtInt(profile?.pokestops) },
+  ];
+  const updated = fmtDate(profile?.updatedAt);
 
   return (
     <div className="page">
       <div className="profile-header">
         <img className="profile-avatar" src={avatarUrl(user)} alt="" width="72" height="72" />
         <div>
-          <h1 className="profile-name">{user.username}</h1>
-          <p className="profile-sub">Dresseur de la communauté POGO PAU</p>
+          <h1 className="profile-name">{profile?.ign || user.username}</h1>
+          <p className="profile-sub">
+            {profile?.ign ? `${user.username} · ` : ''}Dresseur de la communauté POGO PAU
+          </p>
         </div>
       </div>
 
-      <div className="trainer-card">
-        {approved ? (
-          <>
-            <div className="trainer-stat">
-              <span className="trainer-num">{approved.level ?? '—'}</span>
-              <span className="trainer-lab">Niveau</span>
-            </div>
-            <div className="trainer-stat">
-              <span className="trainer-num">{fmtXp(approved.totalXp)}</span>
-              <span className="trainer-lab">XP total</span>
-            </div>
+      {profile === undefined ? (
+        <p className="empty">Chargement de tes stats…</p>
+      ) : hasStats ? (
+        <>
+          <div className="trainer-card">
             <div className="trainer-stat">
               {team ? (
-                <span className="team-pill" style={{ background: team.color }}>{team.label}</span>
+                <img
+                  className="trainer-team-logo"
+                  src={`/teams/${profile.team}.webp`}
+                  alt={team.label}
+                  title={team.label}
+                  width="40"
+                  height="40"
+                />
               ) : (
-                <span className="team-pill team-none">—</span>
+                <span className="trainer-num">—</span>
               )}
-              <span className="trainer-lab">Équipe</span>
+              <span className="trainer-lab">{team ? team.label : 'Équipe'}</span>
             </div>
-          </>
-        ) : (
-          <p className="empty" style={{ margin: 0 }}>
-            Aucune stat validée pour l'instant — déclare-les via le bot pour entrer au classement.
+            {stats.map((s) => (
+              <div className="trainer-stat" key={s.lab}>
+                <span className="trainer-num">{s.val}</span>
+                <span className="trainer-lab">{s.lab}</span>
+              </div>
+            ))}
+          </div>
+
+          <p className="profile-meta">
+            <span className={`board-status ${profile.classement ? 'is-in' : 'is-out'}`}>
+              {profile.classement ? 'Inscrit au classement' : 'Pas au classement'}
+            </span>
+            {updated && <span className="profile-updated">Mis à jour le {updated}</span>}
           </p>
-        )}
-      </div>
+        </>
+      ) : (
+        <div className="trainer-card">
+          <p className="empty" style={{ margin: 0 }}>
+            Aucune stat enregistrée pour l'instant — déclare-les via le bot pour entrer au classement.
+          </p>
+        </div>
+      )}
 
       <div className="declare-box">
         <h2>Déclarer ou mettre à jour mes stats</h2>
         <p>
           La déclaration se fait sur Discord : le <strong>bot t'envoie un message privé</strong>, tu
           réponds avec les <strong>captures de ton profil et de tes médailles</strong>, et il
-          enregistre tout puis met à jour le classement une fois validé par un modérateur.
+          enregistre tout puis met à jour le classement.
         </p>
         <a className="btn-primary" href={DISCORD_INVITE} target="_blank" rel="noreferrer">
           Ouvrir le Discord
         </a>
       </div>
-
-      <h2 className="sub-title">Mes déclarations</h2>
-      <Submissions items={subs} />
     </div>
   );
 }

@@ -21,6 +21,10 @@ export const config = {
 
   databaseUrl: str(process.env.DATABASE_URL),
 
+  // Bot token (shared .env), used only for read-only Discord REST lookups such
+  // as resolving a member's avatar for the leaderboard. Never sent to the browser.
+  botToken: str(process.env.DISCORD_TOKEN),
+
   discord: {
     clientId: str(process.env.CLIENT_ID),
     clientSecret: str(process.env.DISCORD_CLIENT_SECRET),

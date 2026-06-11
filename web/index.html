@@ -8,6 +8,21 @@
       name="description"
       content="Le hub de la communauté Pokémon GO de Pau : carte des secteurs, classement des dresseurs, sorties et guides."
     />
+    <meta name="color-scheme" content="dark light" />
+    <script>
+      // Apply the saved (or system) theme before first paint to avoid a flash.
+      (function () {
+        try {
+          var t = localStorage.getItem('pogo-theme');
+          if (t !== 'light' && t !== 'dark') {
+            t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+          }
+          document.documentElement.dataset.theme = t;
+        } catch (e) {
+          document.documentElement.dataset.theme = 'dark';
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
