@@ -45,7 +45,13 @@ const STATS_PROMPT = [
   '- "pokestops" : "PokéStops visités" (un entier).',
   '- "team" : la COULEUR du numéro de niveau et de la barre de progression indique l’équipe. BLEU → "mystic", ROUGE → "valor", JAUNE/OR → "instinct". Si la couleur est indéterminée ou absente, mets "".',
   'Ignore les séparateurs de milliers (espaces, points, virgules). La virgule décimale du km devient un point.',
-  'Réponds STRICTEMENT en JSON : {"level": number, "level_xp_current": number, "level_xp_needed": number, "total_xp": number, "caught": number, "distance_km": number, "pokestops": number, "team": string}.',
+  '',
+  'AUTHENTICITÉ — analyse aussi si l’image semble truquée :',
+  '- "is_pogo_screenshot" : true si c’est une vraie capture de l’application Pokémon GO (interface du jeu). false si c’est un montage, une photo d’un autre écran/jeu, ou une image quelconque.',
+  '- "tampering_suspected" : true si tu repères des signes de RETOUCHE/MONTAGE sur les nombres : police, taille, graisse ou alignement d’un chiffre incohérents avec le reste de l’interface ; halo, flou ou artefacts de compression localisés autour d’un nombre ; pixels recopiés ; chiffre mal centré dans sa zone ; bordure nette d’un rectangle collé. Sinon false. Dans le doute (image nette et cohérente), mets false.',
+  '- "tampering_reason" : si tampering_suspected vaut true, une courte explication en français (ex. "le Total XP a une police différente du reste"). Sinon "".',
+  '',
+  'Réponds STRICTEMENT en JSON : {"level": number, "level_xp_current": number, "level_xp_needed": number, "total_xp": number, "caught": number, "distance_km": number, "pokestops": number, "team": string, "is_pogo_screenshot": boolean, "tampering_suspected": boolean, "tampering_reason": string}.',
   'Mets 0 (ou 0.0 pour la distance, "" pour team) pour toute valeur que tu ne vois pas. N’invente jamais une valeur.',
 ].join('\n');
 
@@ -87,6 +93,10 @@ export async function extractProfile(imageUrl) {
   }
 }
 
+// Default authenticity verdict: trust the image (no rejection) when vision is
+// off or errors out — so an API hiccup never wrongly flags an honest member.
+const TRUSTED = { isPogo: true, suspected: false, reason: '' };
+
 const EMPTY_STATS = {
   level: null,
   levelXp: null,
@@ -96,6 +106,7 @@ const EMPTY_STATS = {
   distance: null,
   pokestops: null,
   team: null,
+  authenticity: TRUSTED,
 };
 
 const TEAMS = new Set(['mystic', 'valor', 'instinct']);
@@ -153,6 +164,12 @@ export async function extractStats(imageUrl) {
       distance: toKm(parsed.distance_km),
       pokestops: toInt(parsed.pokestops),
       team: TEAMS.has(String(parsed.team ?? '').toLowerCase()) ? String(parsed.team).toLowerCase() : null,
+      authenticity: {
+        // Default to genuine unless the model explicitly says otherwise.
+        isPogo: parsed.is_pogo_screenshot !== false,
+        suspected: parsed.tampering_suspected === true,
+        reason: String(parsed.tampering_reason ?? '').trim(),
+      },
     };
   } catch (error) {
     console.error('[vision] Stats extraction failed:', error);

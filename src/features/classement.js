@@ -1,7 +1,7 @@
 import { existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { AttachmentBuilder, Events } from 'discord.js';
+import { AttachmentBuilder, EmbedBuilder, Events } from 'discord.js';
 import { config } from '../config.js';
 import { JOIN_BUTTON_ID } from '../embeds/classement.js';
 import { buildPogoStatsEmbed } from '../embeds/pogoStats.js';
@@ -38,6 +38,50 @@ function imageUrls(message) {
     .map((a) => a.url);
 }
 
+const STAT_FIELDS = ['level', 'levelXp', 'levelXpMax', 'xp', 'pokedex', 'distance', 'pokestops', 'team'];
+const fr = (n) => Number(n).toLocaleString('fr-FR');
+
+// In Pokémon GO these counters only ever grow. A new screenshot showing a lower
+// value than what we already stored is a strong sign of a doctored or stale
+// capture. Returns a list of human-readable regression reasons (empty if fine).
+function statRegressions(prev, stats) {
+  if (!prev) return [];
+  const checks = [
+    ['niveau', prev.pogo_level, stats.level, 0],
+    ['Total XP', prev.pogo_xp, stats.xp, 0],
+    ['captures', prev.pogo_pokedex, stats.pokedex, 0],
+    ['distance', prev.pogo_distance, stats.distance, 0.2], // tolerate km rounding
+    ['PokéStops', prev.pogo_pokestops, stats.pokestops, 0],
+  ];
+  const reasons = [];
+  for (const [label, before, after, tol] of checks) {
+    if (before != null && after != null && Number(after) < Number(before) - tol) {
+      reasons.push(`${label} en baisse (${fr(before)} → ${fr(after)})`);
+    }
+  }
+  return reasons;
+}
+
+// Alert the staff about a refused screenshot (with the image + detailed reasons).
+async function notifyStaff(message, reasons, urls) {
+  const channelId = config.classementAdminChannelId;
+  if (!channelId) {
+    console.warn('[classement] Suspicious submission but no CLASSEMENT_ADMIN_CHANNEL_ID configured.');
+    return;
+  }
+  const channel = await message.client.channels.fetch(channelId).catch(() => null);
+  if (!channel?.isTextBased?.()) return;
+
+  const embed = new EmbedBuilder()
+    .setColor(0xff4554)
+    .setTitle('🚨 Capture classement suspecte')
+    .setDescription(`<@${message.author.id}> (\`${message.author.tag}\`) — capture **refusée**.`)
+    .addFields({ name: 'Raisons', value: reasons.map((r) => `• ${r}`).join('\n').slice(0, 1024) })
+    .setTimestamp();
+  if (urls[0]) embed.setImage(urls[0]);
+  await channel.send({ embeds: [embed] }).catch((e) => console.error('[classement] Staff alert failed:', e?.message ?? e));
+}
+
 // A participant DMs a profile screenshot → read & store whatever stats are found.
 async function onDirectMessage(message) {
   if (message.inGuild() || message.author.bot) return;
@@ -55,15 +99,41 @@ async function onDirectMessage(message) {
 
   await message.channel.sendTyping().catch(() => {});
 
-  const stats = { level: null, levelXp: null, levelXpMax: null, xp: null, pokedex: null, distance: null, pokestops: null, team: null };
+  const stats = Object.fromEntries(STAT_FIELDS.map((k) => [k, null]));
+  let tamperReason = null; // first edit signal found across the images
+  let isPogo = false; // at least one image recognised as the PoGo app
   for (const url of urls) {
     const s = await extractStats(url);
-    for (const k of Object.keys(stats)) stats[k] = stats[k] ?? s[k];
+    for (const k of STAT_FIELDS) stats[k] = stats[k] ?? s[k];
+    if (s.authenticity?.isPogo) isPogo = true;
+    if (s.authenticity?.suspected && !tamperReason) {
+      tamperReason = s.authenticity.reason || 'signes de retouche détectés';
+    }
   }
 
-  if (Object.values(stats).every((v) => v == null)) {
+  if (STAT_FIELDS.every((k) => stats[k] == null)) {
     await message
       .reply('Je n’ai rien réussi à lire sur cette capture 😕 Envoie l’écran de ton **profil** ou de tes **statistiques** bien net (niveau, Total XP, Pokémon capturés, distance, PokéStops).')
+      .catch(() => {});
+    return;
+  }
+
+  // Anti-triche : refuser si l'image semble retouchée, n'est pas une capture
+  // Pokémon GO, ou si des stats régressent. On notifie le staff et on n'enregistre rien.
+  const prev = await getPogoStats(message.author.id);
+  const reasons = [];
+  if (tamperReason) reasons.push(`retouche probable : ${tamperReason}`);
+  if (!isPogo) reasons.push('ce n’est pas une capture de l’application Pokémon GO');
+  reasons.push(...statRegressions(prev, stats));
+
+  if (reasons.length) {
+    await notifyStaff(message, reasons, urls);
+    await message
+      .reply(
+        '⛔ Je n’ai pas pu valider cette capture pour le classement.\n' +
+          'Assure-toi d’envoyer une capture **récente et non modifiée** de ton écran de profil Pokémon GO. ' +
+          'En cas de doute, un membre de l’équipe va vérifier. 🔎',
+      )
       .catch(() => {});
     return;
   }
