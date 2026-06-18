@@ -14,9 +14,12 @@ const MAX_XP = 25;
 
 const lastAward = new Map();
 
-/** XP needed to go from `level` to `level + 1`. */
+/**
+ * XP needed to go from `level` to `level + 1`. Steeper than the classic MEE6
+ * curve so progression stays long and meaningful (≈2.5× more messages/level).
+ */
 export function xpForLevel(level) {
-  return 5 * level * level + 50 * level + 100;
+  return 15 * level * level + 100 * level + 250;
 }
 
 /** Total XP accumulated to reach the start of `level`. */

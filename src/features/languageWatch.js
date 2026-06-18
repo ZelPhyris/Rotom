@@ -16,16 +16,17 @@ import { config } from '../config.js';
 // Word lists are written WITHOUT accents — incoming text is de-accented before
 // matching, so "enculé" → "encule", "ta mère" → "ta mere", etc. Spaces in an
 // entry are ignored at match time (handled like any obfuscation separator).
+// Only genuine swearing here — everyday/casual words (chiant, chier, con,
+// merdique…) are intentionally left out so normal venting isn't punished.
 const MILD = [
   // français
-  'putain', 'putin', 'ptn', 'merde', 'merdique', 'bordel', 'chier', 'chiant',
-  'fait chier', 'con', 'conne', 'connerie', 'saloperie',
+  'putain', 'putin', 'ptn', 'merde', 'bordel', 'saloperie',
   // espagnol / portugais
-  'mierda', 'joder', 'cono', 'porra', 'droga',
+  'mierda', 'joder', 'cono', 'porra',
   // anglais
-  'shit', 'crap', 'damn',
+  'shit',
   // italien / allemand
-  'merda', 'scheisse', 'mist', 'verdammt',
+  'merda', 'scheisse', 'verdammt',
 ];
 
 const STRONG = [
