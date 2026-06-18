@@ -25,6 +25,10 @@ export const config = {
   // as resolving a member's avatar for the leaderboard. Never sent to the browser.
   botToken: str(process.env.DISCORD_TOKEN),
 
+  // Niantic Spatial (Lightship) developer API key, used server-side only to read
+  // public VPS-activated wayspots around Pau for the map. Never sent to the browser.
+  lightshipApiKey: str(process.env.LIGHTSHIP_API_KEY),
+
   discord: {
     clientId: str(process.env.CLIENT_ID),
     clientSecret: str(process.env.DISCORD_CLIENT_SECRET),

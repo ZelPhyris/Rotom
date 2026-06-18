@@ -87,14 +87,6 @@ const fmtUpdated = (iso) => {
 
 const esc = (s) =>
   String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-const round6 = (n) => Math.round(n * 1e6) / 1e6;
-
-// HTML shown when a gym/PokéStop marker is clicked.
-function poiPopupHTML(props, type) {
-  const fallback = type === 'gym' ? 'Arène' : 'PokéStop';
-  const kind = type === 'gym' ? (props.ex ? 'Arène EX / élite' : 'Arène') : 'PokéStop';
-  return `<h3>${esc(props.name || fallback)}</h3><span class="map-pop-kind map-pop-${type}">${kind}</span>`;
-}
 
 export default function Carte() {
   const mapRef = useRef(null);
@@ -103,23 +95,10 @@ export default function Carte() {
   const [errMsg, setErrMsg] = useState('');
   const [meta, setMeta] = useState({ total: 0, updated: '', minVisible: 3 });
 
-  // Points of interest (loaded from public GeoJSON) + display toggles.
-  const [gyms, setGyms] = useState([]);
-  const [stops, setStops] = useState([]);
-  const [showGyms, setShowGyms] = useState(true);
-  const [showStops, setShowStops] = useState(true);
+  // Pokémon GO spots (VPS-activated Wayspots) served by our API + display toggle.
+  const [spots, setSpots] = useState([]);
+  const [showSpots, setShowSpots] = useState(true);
   const [mapReady, setMapReady] = useState(false);
-
-  // Curation mode: click the map to drop new points, then export the GeoJSON.
-  const [editMode, setEditMode] = useState(false);
-  const [editType, setEditType] = useState('gym');
-  const [draft, setDraft] = useState([]); // [{ type, lng, lat }]
-  const [copied, setCopied] = useState('');
-
-  const editModeRef = useRef(false);
-  useEffect(() => {
-    editModeRef.current = editMode;
-  }, [editMode]);
 
   // ---- map + sectors (created once) ----
   useEffect(() => {
@@ -168,7 +147,6 @@ export default function Carte() {
       map.on('mousemove', 'sectors-fill', () => (map.getCanvas().style.cursor = 'pointer'));
       map.on('mouseleave', 'sectors-fill', () => (map.getCanvas().style.cursor = ''));
       map.on('click', 'sectors-fill', (e) => {
-        if (editModeRef.current) return; // in edit mode a click drops a POI instead
         const p = e.features[0].properties;
         const isVisible = p.visible === 'true' || p.visible === true;
         const body = isVisible
@@ -258,16 +236,17 @@ export default function Carte() {
     }
 
     async function init() {
-      const [geo, counts, gymFc, stopFc] = await Promise.all([
+      const [geo, counts] = await Promise.all([
         fetch('/sectors.geojson').then((r) => r.json()),
         fetch('/counts.json', { cache: 'no-store' }).then((r) => r.json()).catch(() => FALLBACK_COUNTS),
-        fetch('/gyms.geojson').then((r) => r.json()).catch(() => ({ features: [] })),
-        fetch('/pokestops.geojson').then((r) => r.json()).catch(() => ({ features: [] })),
       ]);
       if (cancelled) return;
 
-      setGyms(gymFc.features || []);
-      setStops(stopFc.features || []);
+      // Pokémon GO spots load independently so a slow/empty API never blocks the map.
+      fetch('/api/pois', { credentials: 'include' })
+        .then((r) => r.json())
+        .then((d) => !cancelled && setSpots(Array.isArray(d.wayspots) ? d.wayspots : []))
+        .catch(() => {});
 
       const minVisible = counts.minVisiblePlayers ?? 3;
       const sectorCounts = counts.sectors ?? {};
@@ -323,107 +302,56 @@ export default function Carte() {
     };
   }, []);
 
-  // ---- gym / PokéStop markers (re-rendered when data or toggles change) ----
-  const poiMarkersRef = useRef([]);
+  // ---- Pokémon GO spots: a GPU circle layer (scales to hundreds of points) ----
   useEffect(() => {
     const map = mapRef.current;
-    if (!mapReady || !map) return undefined;
+    if (!mapReady || !map) return;
 
-    const add = (features, type, on) => {
-      if (!on) return;
-      for (const f of features) {
-        const coords = f.geometry?.coordinates;
-        if (!coords) continue;
-        const props = f.properties || {};
-        const el = document.createElement('div');
-        el.className = `poi poi-${type}${type === 'gym' && props.ex ? ' is-ex' : ''}`;
-        el.title = props.name || (type === 'gym' ? 'Arène' : 'PokéStop');
-        el.addEventListener('click', (ev) => {
-          ev.stopPropagation();
-          new maplibregl.Popup({ className: 'map-pop', closeButton: false, offset: 14 })
-            .setLngLat(coords)
-            .setHTML(poiPopupHTML(props, type))
-            .addTo(map);
-        });
-        poiMarkersRef.current.push(
-          new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat(coords).addTo(map),
-        );
-      }
-    };
-
-    add(gyms, 'gym', showGyms);
-    add(stops, 'stop', showStops);
-
-    return () => {
-      poiMarkersRef.current.forEach((m) => m.remove());
-      poiMarkersRef.current = [];
-    };
-  }, [mapReady, gyms, stops, showGyms, showStops]);
-
-  // ---- draft markers added in edit mode (click one to remove it) ----
-  const draftMarkersRef = useRef([]);
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!mapReady || !map) return undefined;
-
-    draft.forEach((d, i) => {
-      const el = document.createElement('div');
-      el.className = `poi poi-${d.type} is-draft`;
-      el.title = 'Cliquer pour supprimer ce point';
-      el.addEventListener('click', (ev) => {
-        ev.stopPropagation();
-        setDraft((prev) => prev.filter((_, j) => j !== i));
-      });
-      draftMarkersRef.current.push(
-        new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat([d.lng, d.lat]).addTo(map),
-      );
-    });
-
-    return () => {
-      draftMarkersRef.current.forEach((m) => m.remove());
-      draftMarkersRef.current = [];
-    };
-  }, [mapReady, draft]);
-
-  // ---- edit mode: a map click drops a point of the selected type ----
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!mapReady || !map || !editMode) return undefined;
-    map.getCanvas().style.cursor = 'crosshair';
-    const onClick = (e) => {
-      setDraft((prev) => [...prev, { type: editType, lng: e.lngLat.lng, lat: e.lngLat.lat }]);
-    };
-    map.on('click', onClick);
-    return () => {
-      map.off('click', onClick);
-      if (mapRef.current) map.getCanvas().style.cursor = '';
-    };
-  }, [mapReady, editMode, editType]);
-
-  // Build the full GeoJSON for a type (existing file + new draft points) and
-  // copy it so it can be pasted back into web/public/<type>.geojson.
-  function exportType(type) {
-    const existing = type === 'gym' ? gyms : stops;
-    const draftFeatures = draft
-      .filter((d) => d.type === type)
-      .map((d) => ({
+    const fc = {
+      type: 'FeatureCollection',
+      features: spots.map((w) => ({
         type: 'Feature',
-        properties: type === 'gym' ? { type: 'gym', name: '', ex: false } : { type: 'stop', name: '' },
-        geometry: { type: 'Point', coordinates: [round6(d.lng), round6(d.lat)] },
-      }));
-    const fc = { type: 'FeatureCollection', features: [...existing, ...draftFeatures] };
-    const text = JSON.stringify(fc, null, 2);
-    navigator.clipboard?.writeText(text).then(
-      () => {
-        setCopied(type);
-        setTimeout(() => setCopied(''), 2500);
-      },
-      () => setCopied(''),
-    );
-  }
+        properties: { name: w.name, image: w.imageUrl || '' },
+        geometry: { type: 'Point', coordinates: [w.lng, w.lat] },
+      })),
+    };
 
-  const draftGyms = draft.filter((d) => d.type === 'gym').length;
-  const draftStops = draft.filter((d) => d.type === 'stop').length;
+    if (map.getSource('spots')) {
+      map.getSource('spots').setData(fc);
+    } else {
+      map.addSource('spots', { type: 'geojson', data: fc });
+      map.addLayer({
+        id: 'spots-circles',
+        type: 'circle',
+        source: 'spots',
+        paint: {
+          'circle-radius': ['interpolate', ['linear'], ['zoom'], 11, 2.5, 14, 4.5, 17, 8],
+          'circle-color': '#38bdf8',
+          'circle-stroke-color': '#ffffff',
+          'circle-stroke-width': 1.2,
+          'circle-opacity': 0.92,
+        },
+      });
+
+      map.on('mouseenter', 'spots-circles', () => (map.getCanvas().style.cursor = 'pointer'));
+      map.on('mouseleave', 'spots-circles', () => (map.getCanvas().style.cursor = ''));
+      map.on('click', 'spots-circles', (e) => {
+        const f = e.features[0];
+        const p = f.properties;
+        const img = p.image
+          ? `<img class="map-pop-img" src="${esc(p.image)}=w220-h150-c" alt="" loading="lazy" />`
+          : '';
+        new maplibregl.Popup({ className: 'map-pop', closeButton: false, offset: 12 })
+          .setLngLat(f.geometry.coordinates.slice())
+          .setHTML(
+            `<h3>${esc(p.name || 'Spot')}</h3><span class="map-pop-kind map-pop-stop">Spot Pokémon GO</span>${img}`,
+          )
+          .addTo(map);
+      });
+    }
+
+    map.setLayoutProperty('spots-circles', 'visibility', showSpots ? 'visible' : 'none');
+  }, [mapReady, spots, showSpots]);
 
   return (
     <div className="map-page">
@@ -458,64 +386,12 @@ export default function Carte() {
 
         <div className="map-layers">
           <label className="map-layer">
-            <input type="checkbox" checked={showGyms} onChange={(e) => setShowGyms(e.target.checked)} />
-            <span className="poi-dot poi-gym" aria-hidden="true" />
-            Arènes <em>({gyms.length})</em>
-          </label>
-          <label className="map-layer">
-            <input type="checkbox" checked={showStops} onChange={(e) => setShowStops(e.target.checked)} />
+            <input type="checkbox" checked={showSpots} onChange={(e) => setShowSpots(e.target.checked)} />
             <span className="poi-dot poi-stop" aria-hidden="true" />
-            PokéStops <em>({stops.length})</em>
+            Spots Pokémon GO <em>({spots.length})</em>
           </label>
+          <p className="map-layer-note">PokéStops &amp; arènes (Wayspots Niantic VPS).</p>
         </div>
-
-        {import.meta.env.DEV && (
-        <details className="map-edit" open={editMode}>
-          <summary>Édition (admin)</summary>
-          <p className="map-edit-help">
-            Active le mode édition puis clique sur la carte pour poser un point. Clique un point
-            ajouté pour le retirer. Exporte ensuite le GeoJSON à coller dans le repo.
-          </p>
-
-          <label className="map-edit-toggle">
-            <input type="checkbox" checked={editMode} onChange={(e) => setEditMode(e.target.checked)} />
-            Mode édition
-          </label>
-
-          {editMode && (
-            <div className="map-edit-type" role="radiogroup" aria-label="Type de point">
-              <button
-                type="button"
-                className={editType === 'gym' ? 'active' : ''}
-                onClick={() => setEditType('gym')}
-              >
-                <span className="poi-dot poi-gym" aria-hidden="true" /> Arène
-              </button>
-              <button
-                type="button"
-                className={editType === 'stop' ? 'active' : ''}
-                onClick={() => setEditType('stop')}
-              >
-                <span className="poi-dot poi-stop" aria-hidden="true" /> PokéStop
-              </button>
-            </div>
-          )}
-
-          <div className="map-edit-actions">
-            <button type="button" onClick={() => exportType('gym')}>
-              {copied === 'gym' ? 'Copié !' : `Exporter arènes (+${draftGyms})`}
-            </button>
-            <button type="button" onClick={() => exportType('stop')}>
-              {copied === 'stop' ? 'Copié !' : `Exporter PokéStops (+${draftStops})`}
-            </button>
-            {draft.length > 0 && (
-              <button type="button" className="map-edit-clear" onClick={() => setDraft([])}>
-                Effacer le brouillon
-              </button>
-            )}
-          </div>
-        </details>
-        )}
       </div>
 
       {loading && !errMsg && <div className="map-loading">Chargement de la carte…</div>}
