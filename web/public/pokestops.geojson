@@ -1,0 +1,10 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "type": "stop", "name": "Place Clemenceau" },
+      "geometry": { "type": "Point", "coordinates": [-0.36978, 43.29655] }
+    }
+  ]
+}
