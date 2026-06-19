@@ -40,7 +40,7 @@ function imageUrls(message) {
 
 async function updateDetection(channel, rec) {
   const namePart = rec.name ? `**${rec.name}**` : '❔';
-  const codePart = rec.code ? `**${formatFriendCode(rec.code)}**` : '❔';
+  const codePart = rec.code ? `**${formatFriendCode(rec.code)}**` : '*non fourni (facultatif)*';
   const team = TEAMS[rec.stats.team];
   const teamPart = team ? ` · Équipe : ${team.emoji} **${team.label}**` : '';
   const content = `🔎 Pseudo : ${namePart} · Code ami : ${codePart}${teamPart}\nUn modo valide avec ${VALIDATE}.`;

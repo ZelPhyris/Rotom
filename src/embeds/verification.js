@@ -1,4 +1,5 @@
 import { EmbedBuilder } from 'discord.js';
+import { EXAMPLE_FILE, hasExampleImage } from './exampleImage.js';
 
 const BRAND = 0xffffff; // white
 
@@ -8,19 +9,26 @@ const BRAND = 0xffffff; // white
  * @returns {EmbedBuilder}
  */
 export function buildVerificationEmbed() {
-  return new EmbedBuilder()
+  const embed = new EmbedBuilder()
     .setColor(BRAND)
     .setTitle('👋 Bienvenue ! Une dernière étape')
     .setDescription(
       [
-        'Pour accéder au serveur, poste ici **deux captures d’écran** de Pokémon GO :',
+        'Pour accéder au serveur, poste ici une **capture d’écran** de Pokémon GO :',
         '',
-        '📸 **1.** ton **profil de dresseur** (avec ton pseudo),',
-        '📸 **2.** ton **code ami** (l’écran « Ajouter un ami » avec les 12 chiffres).',
+        '📸 **obligatoire** — ton **profil de dresseur** (avec ton pseudo).',
         '',
-        'Un membre de l’équipe validera, et ton pseudo et ton code ami seront enregistrés automatiquement. Tu auras alors accès à l’ensemble des salons.',
+        '📸 *(facultatif)* — ton **code ami** (l’écran « Ajouter un ami » avec les 12 chiffres) : un petit plus pour que la commu t’ajoute plus vite.',
+        '',
+        'Un membre de l’équipe validera, et ton pseudo (et ton code ami s’il est fourni) seront enregistrés automatiquement. Tu auras alors accès à l’ensemble des salons.',
+        '',
+        '👇 **Exemple** d’une capture de profil bien lisible.',
         '',
         'Merci, et à très vite sur le terrain ! 🎮',
       ].join('\n'),
     );
+
+  // Show the example screenshot at the bottom of the embed when it's available.
+  if (hasExampleImage()) embed.setImage(`attachment://${EXAMPLE_FILE}`);
+  return embed;
 }

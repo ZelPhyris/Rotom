@@ -5,6 +5,7 @@ import { AttachmentBuilder, EmbedBuilder, Events } from 'discord.js';
 import { config } from '../config.js';
 import { JOIN_BUTTON_ID } from '../embeds/classement.js';
 import { buildPogoStatsEmbed } from '../embeds/pogoStats.js';
+import { exampleImageAttachment } from '../embeds/exampleImage.js';
 import { applyTeamRole } from './teamRole.js';
 import { extractStats, hasVision } from './visionExtract.js';
 import {
@@ -204,26 +205,28 @@ const ONBOARDING_TEXT = [
   '• 👟 ta **distance parcourue**',
   '• 🛑 tes **PokéStops visités**',
   '',
-  '📸 **Où trouver l’écran ?** Dans le jeu, touche ton **avatar en bas à gauche**, puis l’onglet où s’affichent tes statistiques (distance, captures, PokéStops, Total XP). Une capture nette suffit.',
+  '📸 **Où trouver l’écran ?** Dans le jeu, touche ton **avatar en bas à gauche**, puis l’onglet où s’affichent tes statistiques (distance, captures, PokéStops, Total XP). Une capture nette suffit — **exemple ci-dessous** 👇',
   '',
   'Tu peux m’envoyer une nouvelle capture quand tu veux pour te mettre à jour. Pour quitter le classement : `/classement-pogo quitter`.',
 ].join('\n');
 
-// Optional example screenshots: drop files named "classement-exemple*.png|jpg"
-// in /assets and they're attached to the onboarding DM automatically.
+// Example screenshots attached to the onboarding DM: the shared profile example
+// (assets/profil-exemple.png) plus any extra files named "classement-exemple*".
 function exampleAttachments() {
-  const candidates = [
+  const extra = [
     'classement-exemple.png',
     'classement-exemple-1.png',
     'classement-exemple-2.png',
     'classement-exemple.jpg',
     'classement-exemple-1.jpg',
     'classement-exemple-2.jpg',
-  ];
-  return candidates
+  ]
     .map((name) => join(ASSETS_DIR, name))
     .filter((p) => existsSync(p))
     .map((p) => new AttachmentBuilder(p));
+
+  const shared = exampleImageAttachment();
+  return shared ? [shared, ...extra] : extra;
 }
 
 async function sendOnboardingDM(user) {

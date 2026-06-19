@@ -4,6 +4,7 @@ import { buildVerificationEmbed } from '../embeds/verification.js';
 import { buildSuggestionsEmbed } from '../embeds/suggestions.js';
 import { buildPresentationEmbed } from '../embeds/presentation.js';
 import { buildClassementEmbed, buildClassementComponents } from '../embeds/classement.js';
+import { exampleImageAttachment } from '../embeds/exampleImage.js';
 
 /**
  * Registry of publishable info embeds. To add one: create its builder in
@@ -12,7 +13,7 @@ import { buildClassementEmbed, buildClassementComponents } from '../embeds/class
  */
 const EMBEDS = {
   reglement: { label: 'Règlement', build: buildReglementEmbed },
-  verification: { label: 'Vérification', build: buildVerificationEmbed },
+  verification: { label: 'Vérification', build: buildVerificationEmbed, files: () => [exampleImageAttachment()].filter(Boolean) },
   suggestions: { label: 'Suggestions', build: buildSuggestionsEmbed },
   presentation: { label: 'Présentation', build: buildPresentationEmbed },
   classement: { label: 'Classement PoGo', build: buildClassementEmbed, components: buildClassementComponents },
@@ -44,6 +45,7 @@ export async function execute(interaction) {
 
   const embed = await entry.build(interaction);
   const components = entry.components ? [await entry.components(interaction)] : [];
-  await interaction.channel.send({ embeds: [embed], components });
+  const files = entry.files ? entry.files(interaction) : [];
+  await interaction.channel.send({ embeds: [embed], components, files });
   await interaction.reply({ content: `Embed « ${entry.label} » publié ici. ✅`, ephemeral: true });
 }
