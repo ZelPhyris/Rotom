@@ -42,41 +42,54 @@ function imageUrls(message) {
 const STAT_FIELDS = ['level', 'levelXp', 'levelXpMax', 'xp', 'pokedex', 'distance', 'pokestops', 'team'];
 const fr = (n) => Number(n).toLocaleString('fr-FR');
 
-// In Pokémon GO these counters only ever grow. A new screenshot showing a lower
-// value than what we already stored is a strong sign of a doctored or stale
-// capture. Returns a list of human-readable regression reasons (empty if fine).
+// In Pokémon GO these counters only ever grow, so a value LOWER than the one we
+// already stored signals a stale/doctored capture. Each metric has an absolute
+// floor + a relative slack (% of the previous value) so that an identical or
+// near-identical re-submission — where OCR may read one digit slightly off —
+// is never flagged. Only a real drop beyond the noise counts.
+//   [label, prevColumn, statField, absoluteTolerance, relativeTolerance]
+const REGRESSION_CHECKS = [
+  ['niveau', 'pogo_level', 'level', 0, 0],
+  ['Total XP', 'pogo_xp', 'xp', 1000, 0.01],
+  ['captures', 'pogo_pokedex', 'pokedex', 5, 0.01],
+  ['distance', 'pogo_distance', 'distance', 1, 0.01],
+  ['PokéStops', 'pogo_pokestops', 'pokestops', 5, 0.01],
+];
+
 function statRegressions(prev, stats) {
   if (!prev) return [];
-  const checks = [
-    ['niveau', prev.pogo_level, stats.level, 0],
-    ['Total XP', prev.pogo_xp, stats.xp, 0],
-    ['captures', prev.pogo_pokedex, stats.pokedex, 0],
-    ['distance', prev.pogo_distance, stats.distance, 0.2], // tolerate km rounding
-    ['PokéStops', prev.pogo_pokestops, stats.pokestops, 0],
-  ];
   const reasons = [];
-  for (const [label, before, after, tol] of checks) {
-    if (before != null && after != null && Number(after) < Number(before) - tol) {
-      reasons.push(`${label} en baisse (${fr(before)} → ${fr(after)})`);
-    }
+  for (const [label, prevKey, statKey, absTol, relTol] of REGRESSION_CHECKS) {
+    const before = prev[prevKey];
+    const after = stats[statKey];
+    if (before == null || after == null) continue;
+    const b = Number(before);
+    const a = Number(after);
+    const tol = Math.max(absTol, b * relTol);
+    if (a < b - tol) reasons.push(`${label} en baisse (${fr(b)} → ${fr(a)})`);
   }
   return reasons;
 }
 
-// Alert the staff about a refused screenshot (with the image + detailed reasons).
-async function notifyStaff(message, reasons, urls) {
+// Alert the staff about a suspicious screenshot (with the image + reasons).
+// `refused: true` → the submission was rejected; false → kept but to double-check.
+async function notifyStaff(message, reasons, urls, { refused = true } = {}) {
   const channelId = config.classementAdminChannelId;
   if (!channelId) {
-    console.warn('[classement] Suspicious submission but no CLASSEMENT_ADMIN_CHANNEL_ID configured.');
+    console.warn(`[classement] Suspicious submission (${reasons.join('; ')}) but no CLASSEMENT_ADMIN_CHANNEL_ID configured.`);
     return;
   }
   const channel = await message.client.channels.fetch(channelId).catch(() => null);
   if (!channel?.isTextBased?.()) return;
 
   const embed = new EmbedBuilder()
-    .setColor(0xff4554)
-    .setTitle('🚨 Capture classement suspecte')
-    .setDescription(`<@${message.author.id}> (\`${message.author.tag}\`) — capture **refusée**.`)
+    .setColor(refused ? 0xff4554 : 0xffcc1f)
+    .setTitle(refused ? '🚨 Capture classement refusée' : '⚠️ Capture classement à vérifier')
+    .setDescription(
+      refused
+        ? `<@${message.author.id}> (\`${message.author.tag}\`) — capture **refusée** (stats non enregistrées).`
+        : `<@${message.author.id}> (\`${message.author.tag}\`) — stats **enregistrées**, mais à contrôler.`,
+    )
     .addFields({ name: 'Raisons', value: reasons.map((r) => `• ${r}`).join('\n').slice(0, 1024) })
     .setTimestamp();
   if (urls[0]) embed.setImage(urls[0]);
@@ -119,21 +132,18 @@ async function onDirectMessage(message) {
     return;
   }
 
-  // Anti-triche : refuser si l'image semble retouchée, n'est pas une capture
-  // Pokémon GO, ou si des stats régressent. On notifie le staff et on n'enregistre rien.
+  // Anti-triche. Seule la RÉGRESSION de stats est un signal fiable (déterministe,
+  // basé sur l'historique) → on refuse fermement. La détection de retouche / non-PoGo
+  // vient d'une analyse IA sujette aux faux positifs (compression JPEG, flou…) : on
+  // n'bloque donc PAS le membre, on enregistre et on alerte juste le staff "à vérifier".
   const prev = await getPogoStats(message.author.id);
-  const reasons = [];
-  if (tamperReason) reasons.push(`retouche probable : ${tamperReason}`);
-  if (!isPogo) reasons.push('ce n’est pas une capture de l’application Pokémon GO');
-  reasons.push(...statRegressions(prev, stats));
-
-  if (reasons.length) {
-    await notifyStaff(message, reasons, urls);
+  const regressions = statRegressions(prev, stats);
+  if (regressions.length) {
+    await notifyStaff(message, regressions, urls, { refused: true });
     await message
       .reply(
-        '⛔ Je n’ai pas pu valider cette capture pour le classement.\n' +
-          'Assure-toi d’envoyer une capture **récente et non modifiée** de ton écran de profil Pokémon GO. ' +
-          'En cas de doute, un membre de l’équipe va vérifier. 🔎',
+        '⛔ Je n’ai pas pu valider cette capture : certaines stats sont **inférieures** à tes valeurs déjà enregistrées.\n' +
+          'Envoie ta capture **la plus récente** (XP, captures, distance et PokéStops ne peuvent qu’augmenter). En cas d’erreur, un membre de l’équipe peut corriger.',
       )
       .catch(() => {});
     return;
@@ -153,6 +163,12 @@ async function onDirectMessage(message) {
   await message
     .reply({ content: '✅ Stats mises à jour !', embeds: [buildPogoStatsEmbed(message.author, profile?.ign ?? null, stored)] })
     .catch(() => {});
+
+  // Soft anti-cheat: stats are kept, but flag a suspicious image for staff review.
+  const flags = [];
+  if (tamperReason) flags.push(`retouche possible : ${tamperReason}`);
+  if (!isPogo) flags.push('ne ressemble pas à une capture Pokémon GO');
+  if (flags.length) await notifyStaff(message, flags, urls, { refused: false });
 }
 
 const REMINDER_TEXT = [
