@@ -78,6 +78,7 @@ async function onMessage(message) {
   await message.react(REFUSE).catch(() => {});
 
   if (hasVision()) {
+    let tamperReason = null; // first edit signal found on this message's images
     for (const url of urls) {
       if (!rec.name || !rec.code) {
         const { trainerName, friendCode } = await extractProfile(url);
@@ -87,8 +88,18 @@ async function onMessage(message) {
       // Read stats + team from the profile screenshot (team = level/XP colour).
       const s = await extractStats(url);
       for (const k of STAT_KEYS) rec.stats[k] = rec.stats[k] ?? s[k];
+      if (s.authenticity?.suspected && !tamperReason) {
+        tamperReason = s.authenticity.reason || 'signes de retouche détectés';
+      }
     }
     await updateDetection(message.channel, rec);
+
+    // Flag a doctored screenshot right under it so a mod sees it before validating.
+    if (tamperReason) {
+      await message
+        .reply(`⚠️ **Attention, photo potentiellement truquée.**\n> ${tamperReason}\nÀ vérifier avant de valider.`)
+        .catch(() => {});
+    }
   }
 }
 
