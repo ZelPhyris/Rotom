@@ -11,29 +11,22 @@ export function hasVision() {
   return ai !== null;
 }
 
-const PROMPT = [
-  'Tu lis une capture d’écran Pokémon GO (écran de profil ou "Ajouter un ami"). Extrais avec le plus grand soin :',
-  '- "trainer_name" : le PSEUDO du dresseur. Sur le profil, c’est le grand texte EN HAUT, au-dessus du niveau et à côté de l’avatar. Sur l’écran "Ajouter un ami", c’est le nom affiché juste au-dessus du code ami. Transcris-le EXACTEMENT, caractère par caractère : respecte majuscules/minuscules, accents, chiffres et symboles. Ne traduis pas, n’invente pas, n’ajoute aucun espace. Même si l’image est floue, sombre ou de faible qualité, fais de ton mieux pour le déchiffrer.',
-  '- "friend_code" : le code ami à 12 chiffres (souvent écrit "1234 5678 9012").',
-  'Réponds STRICTEMENT en JSON : {"trainer_name": string, "friend_code": string}.',
-  'Mets une chaîne vide UNIQUEMENT si la valeur est réellement absente ou totalement illisible.',
-].join('\n');
+// Whether a thrown error is a daily-quota exhaustion (won't recover on retry).
+function isDailyQuota(error) {
+  return error?.status === 429 && /per ?day|FreeTier|RESOURCE_EXHAUSTED/i.test(error?.message ?? '');
+}
 
-// Used as a second pass when the first read returns no name: insist on the
-// pseudo alone (Gemini is non-deterministic, a focused retry often gets it).
-const NAME_RETRY_PROMPT = [
-  'Cette capture d’écran Pokémon GO contient le PSEUDO d’un dresseur, mais il est peut-être petit, flou ou peu contrasté.',
-  'Concentre-toi UNIQUEMENT sur ce pseudo : le grand texte en haut du profil (au-dessus du niveau, à côté de l’avatar), ou le nom au-dessus du code ami sur l’écran "Ajouter un ami".',
-  'Lis-le caractère par caractère et transcris-le EXACTEMENT (majuscules, accents, chiffres et symboles compris). Ne le laisse vide que s’il n’y a vraiment aucun pseudo visible.',
-  'Réponds STRICTEMENT en JSON : {"trainer_name": string, "friend_code": string}.',
-].join('\n');
-
-// Gemini's free tier occasionally returns 503/429 under load — retry transient errors.
+// Gemini's free tier occasionally returns 503/429 under load — retry transient
+// errors. A *daily* quota 429 won't recover, so fail fast and log it clearly.
 async function generateWithRetry(params, attempts = 4) {
   for (let i = 0; i < attempts; i++) {
     try {
       return await ai.models.generateContent(params);
     } catch (error) {
+      if (isDailyQuota(error)) {
+        console.error('[vision] Quota Gemini quotidien épuisé — lecture des captures indisponible jusqu’au reset (envisage le palier payant ou un autre VISION_MODEL).');
+        throw error;
+      }
       const status = error?.status;
       const transient = status === 503 || status === 429 || status === 500;
       if (!transient || i === attempts - 1) throw error;
@@ -42,9 +35,13 @@ async function generateWithRetry(params, attempts = 4) {
   }
 }
 
+// A single prompt reads EVERYTHING (name, code, stats, team, authenticity) so we
+// spend only one Gemini request per image — important on the free tier.
 const STATS_PROMPT = [
-  'Tu lis une capture d’écran Pokémon GO (écran de profil ou liste de statistiques).',
+  'Tu lis une capture d’écran Pokémon GO (écran de profil, "Ajouter un ami" ou liste de statistiques).',
   'Extrais chaque valeur UNIQUEMENT si elle est clairement visible sur l’image :',
+  '- "trainer_name" : le PSEUDO du dresseur. Sur le profil, c’est le grand texte EN HAUT, au-dessus du niveau et à côté de l’avatar. Sur l’écran "Ajouter un ami", c’est le nom juste au-dessus du code ami. Transcris-le EXACTEMENT, caractère par caractère (majuscules/minuscules, accents, chiffres et symboles). Ne traduis pas, n’invente pas, n’ajoute aucun espace. Même si l’image est floue ou sombre, fais de ton mieux pour le déchiffrer.',
+  '- "friend_code" : le code ami à 12 chiffres (souvent écrit "1234 5678 9012").',
   '- "level" : le grand nombre sous le mot "NIVEAU", près de l’avatar (un entier, ex. 38, 50, 51…). Lis-le tel quel, ne le plafonne pas.',
   '- "level_xp_current" : à côté du niveau, le nombre AVANT le "/" dans la barre d’XP (XP dans le niveau actuel, ex. "654 012 / 1 580 000" → 654012).',
   '- "level_xp_needed" : dans cette même barre, le nombre APRÈS le "/" (XP requis pour ce niveau, ex. "654 012 / 1 580 000" → 1580000).',
@@ -61,8 +58,8 @@ const STATS_PROMPT = [
   '- "tampering_suspected" : true UNIQUEMENT si un nombre a visiblement été RÉÉCRIT ou COLLÉ : police nettement différente du reste de l’interface, chiffres d’une autre taille/couleur que les libellés voisins, rectangle de fond collé derrière un nombre, chiffres qui se chevauchent ou clairement désalignés. Si l’image est simplement floue, compressée ou de mauvaise qualité, ce n’est PAS de la retouche. En cas de doute, mets TOUJOURS false.',
   '- "tampering_reason" : si (et seulement si) tampering_suspected vaut true, une courte explication précise en français (ex. "le Total XP est dans une police différente du reste"). Sinon "".',
   '',
-  'Réponds STRICTEMENT en JSON : {"level": number, "level_xp_current": number, "level_xp_needed": number, "total_xp": number, "caught": number, "distance_km": number, "pokestops": number, "eggs_hatched": number, "team": string, "is_pogo_screenshot": boolean, "tampering_suspected": boolean, "tampering_reason": string}.',
-  'Mets 0 (ou 0.0 pour la distance, "" pour team) pour toute valeur que tu ne vois pas. N’invente jamais une valeur.',
+  'Réponds STRICTEMENT en JSON : {"trainer_name": string, "friend_code": string, "level": number, "level_xp_current": number, "level_xp_needed": number, "total_xp": number, "caught": number, "distance_km": number, "pokestops": number, "eggs_hatched": number, "team": string, "is_pogo_screenshot": boolean, "tampering_suspected": boolean, "tampering_reason": string}.',
+  'Mets 0 (ou 0.0 pour la distance, "" pour les textes) pour toute valeur que tu ne vois pas. N’invente jamais une valeur.',
 ].join('\n');
 
 /** Fetch an image URL and return { data: base64, mimeType }. */
@@ -73,47 +70,15 @@ async function fetchImage(imageUrl) {
   return { data, mimeType };
 }
 
-/** One Gemini pass for the name + friend code with the given prompt. */
-async function readProfile(data, mimeType, prompt) {
-  const response = await generateWithRetry({
-    model: config.visionModel,
-    contents: [{ inlineData: { mimeType, data } }, { text: prompt }],
-    config: { responseMimeType: 'application/json' },
-  });
-  const text = response?.text;
-  if (!text) return { trainerName: null, friendCode: null };
-  const parsed = JSON.parse(text);
-  const trainerName = String(parsed.trainer_name ?? '').trim() || null;
-  const digits = String(parsed.friend_code ?? '').replace(/\D/g, '');
-  const friendCode = digits.length === 12 ? digits : null;
-  return { trainerName, friendCode };
-}
-
 /**
  * Extract the trainer name and/or 12-digit friend code from a screenshot.
- * If the name doesn't come through, a second insistent pass is attempted so a
- * low-quality screenshot still gets read (the name is critical for validation).
+ * Thin wrapper over extractStats (single Gemini call reads everything).
  * @param {string} imageUrl  publicly fetchable image URL (e.g. a Discord attachment)
  * @returns {Promise<{ trainerName: string|null, friendCode: string|null }>}
  */
 export async function extractProfile(imageUrl) {
-  if (!ai) return { trainerName: null, friendCode: null };
-
-  try {
-    const { data, mimeType } = await fetchImage(imageUrl);
-    let result = await readProfile(data, mimeType, PROMPT);
-
-    if (!result.trainerName) {
-      const retry = await readProfile(data, mimeType, NAME_RETRY_PROMPT).catch(() => null);
-      if (retry?.trainerName) {
-        result = { trainerName: retry.trainerName, friendCode: result.friendCode ?? retry.friendCode };
-      }
-    }
-    return result;
-  } catch (error) {
-    console.error('[vision] Profile extraction failed:', error);
-    return { trainerName: null, friendCode: null };
-  }
+  const { trainerName, friendCode } = await extractStats(imageUrl);
+  return { trainerName, friendCode };
 }
 
 // Default authenticity verdict: trust the image (no rejection) when vision is
@@ -121,6 +86,8 @@ export async function extractProfile(imageUrl) {
 const TRUSTED = { isPogo: true, suspected: false, certain: false, reason: '' };
 
 const EMPTY_STATS = {
+  trainerName: null,
+  friendCode: null,
   level: null,
   levelXp: null,
   levelXpMax: null,
@@ -180,6 +147,9 @@ export async function extractStats(imageUrl) {
     const lvl = toInt(parsed.level);
     const xpCur = toInt(parsed.level_xp_current);
     const xpMax = toInt(parsed.level_xp_needed);
+    const trainerName = String(parsed.trainer_name ?? '').trim() || null;
+    const fcDigits = String(parsed.friend_code ?? '').replace(/\D/g, '');
+    const friendCode = fcDigits.length === 12 ? fcDigits : null;
 
     // Deterministic sanity checks: some values are physically impossible in
     // Pokémon GO, so they prove the image was edited no matter what the AI
@@ -196,6 +166,8 @@ export async function extractStats(imageUrl) {
     const llmReason = String(parsed.tampering_reason ?? '').trim();
 
     return {
+      trainerName,
+      friendCode,
       // Read the level as shown (no 50 cap — the game goes higher); sanity-bound only.
       level: lvl && lvl >= 1 && lvl <= 100 ? lvl : null,
       levelXp: xpCur,

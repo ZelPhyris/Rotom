@@ -1,7 +1,7 @@
 import { Events, PermissionFlagsBits } from 'discord.js';
 import { config } from '../config.js';
 import { sendWelcome } from './welcome.js';
-import { extractProfile, extractStats, hasVision } from './visionExtract.js';
+import { extractStats, hasVision } from './visionExtract.js';
 import { applyTeamRole, TEAMS } from './teamRole.js';
 import { setPogoIgn, setPogoFriendCode, setPogoStats } from '../db.js';
 import { formatFriendCode } from '../commands/set-pogo.js';
@@ -80,16 +80,14 @@ async function onMessage(message) {
   if (hasVision()) {
     let tamperReason = null; // first edit signal found on this message's images
     for (const url of urls) {
+      // One Gemini call per image reads name + code + stats + team at once.
       // Always re-analyse every posted image — the LATEST reading wins — so a
-      // corrected re-upload actually updates the detection (not just re-reacts).
-      // A value only overrides a previous one when it's actually read (non-null),
-      // so the two-screenshot flow (name, then friend code) still accumulates.
-      const { trainerName, friendCode } = await extractProfile(url);
-      if (trainerName) rec.name = trainerName;
-      if (friendCode) rec.code = friendCode;
-
-      // Read stats + team from the profile screenshot (team = level/XP colour).
+      // corrected re-upload updates the detection (not just re-reacts). A value
+      // only overrides a previous one when it's actually read (non-null), so the
+      // two-screenshot flow (name, then friend code) still accumulates.
       const s = await extractStats(url);
+      if (s.trainerName) rec.name = s.trainerName;
+      if (s.friendCode) rec.code = s.friendCode;
       for (const k of STAT_KEYS) if (s[k] != null) rec.stats[k] = s[k];
       if (s.authenticity?.suspected && !tamperReason) {
         tamperReason = s.authenticity.reason || 'signes de retouche détectés';
@@ -167,10 +165,9 @@ async function onReaction(reaction, user) {
   if (hasVision() && (!name || !code || !stats.team)) {
     for (const url of imageUrls(message)) {
       if (name && code && stats.team) break;
-      const p = await extractProfile(url);
-      name = name || p.trainerName;
-      code = code || p.friendCode;
       const s = await extractStats(url);
+      name = name || s.trainerName;
+      code = code || s.friendCode;
       for (const k of STAT_KEYS) stats[k] = stats[k] ?? s[k];
     }
   }
