@@ -114,7 +114,8 @@ async function onDirectMessage(message) {
   await message.channel.sendTyping().catch(() => {});
 
   const stats = Object.fromEntries(STAT_FIELDS.map((k) => [k, null]));
-  let tamperReason = null; // first edit signal found across the images
+  let tamperReason = null; // first edit signal (AI guess) across the images
+  let certainReason = null; // first PROVEN fake (impossible value) across the images
   let isPogo = false; // at least one image recognised as the PoGo app
   for (const url of urls) {
     const s = await extractStats(url);
@@ -122,6 +123,9 @@ async function onDirectMessage(message) {
     if (s.authenticity?.isPogo) isPogo = true;
     if (s.authenticity?.suspected && !tamperReason) {
       tamperReason = s.authenticity.reason || 'signes de retouche détectés';
+    }
+    if (s.authenticity?.certain && !certainReason) {
+      certainReason = s.authenticity.reason || 'valeur impossible détectée';
     }
   }
 
@@ -132,18 +136,23 @@ async function onDirectMessage(message) {
     return;
   }
 
-  // Anti-triche. Seule la RÉGRESSION de stats est un signal fiable (déterministe,
-  // basé sur l'historique) → on refuse fermement. La détection de retouche / non-PoGo
-  // vient d'une analyse IA sujette aux faux positifs (compression JPEG, flou…) : on
-  // n'bloque donc PAS le membre, on enregistre et on alerte juste le staff "à vérifier".
+  // Anti-triche, deux niveaux :
+  //  1) Fraude PROUVÉE (valeur physiquement impossible) ou RÉGRESSION de stats →
+  //     signaux fiables/déterministes → on refuse fermement, rien n'est enregistré.
+  //  2) Retouche seulement « suspectée » par l'IA (faux positifs possibles : flou,
+  //     compression…) → on n'bloque PAS, on enregistre et on alerte juste le staff.
   const prev = await getPogoStats(message.author.id);
   const regressions = statRegressions(prev, stats);
-  if (regressions.length) {
-    await notifyStaff(message, regressions, urls, { refused: true });
+  const hardReasons = [...(certainReason ? [certainReason] : []), ...regressions];
+  if (hardReasons.length) {
+    await notifyStaff(message, hardReasons, urls, { refused: true });
+    const detail = certainReason
+      ? 'cette capture semble **modifiée** (valeur impossible).'
+      : 'certaines stats sont **inférieures** à tes valeurs déjà enregistrées.';
     await message
       .reply(
-        '⛔ Je n’ai pas pu valider cette capture : certaines stats sont **inférieures** à tes valeurs déjà enregistrées.\n' +
-          'Envoie ta capture **la plus récente** (XP, captures, distance et PokéStops ne peuvent qu’augmenter). En cas d’erreur, un membre de l’équipe peut corriger.',
+        `⛔ Je n’ai pas pu valider cette capture : ${detail}\n` +
+          'Envoie une capture **récente et non modifiée** de ton profil. En cas d’erreur, un membre de l’équipe peut vérifier.',
       )
       .catch(() => {});
     return;

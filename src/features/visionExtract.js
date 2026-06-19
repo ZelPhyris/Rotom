@@ -95,7 +95,7 @@ export async function extractProfile(imageUrl) {
 
 // Default authenticity verdict: trust the image (no rejection) when vision is
 // off or errors out — so an API hiccup never wrongly flags an honest member.
-const TRUSTED = { isPogo: true, suspected: false, reason: '' };
+const TRUSTED = { isPogo: true, suspected: false, certain: false, reason: '' };
 
 const EMPTY_STATS = {
   level: null,
@@ -154,11 +154,25 @@ export async function extractStats(imageUrl) {
 
     const parsed = JSON.parse(text);
     const lvl = toInt(parsed.level);
+    const xpCur = toInt(parsed.level_xp_current);
+    const xpMax = toInt(parsed.level_xp_needed);
+
+    // Deterministic sanity checks: some values are physically impossible in
+    // Pokémon GO, so they prove the image was edited no matter what the AI
+    // tampering analysis concludes. (Trainer level caps at 80; a margin is kept.)
+    let sanityReason = null;
+    if (lvl != null && lvl > 85) sanityReason = `niveau impossible (${lvl})`;
+    else if (xpCur != null && xpMax != null && xpCur > xpMax)
+      sanityReason = 'barre d’XP incohérente (XP du niveau supérieure au palier requis)';
+
+    const llmSuspected = parsed.tampering_suspected === true;
+    const llmReason = String(parsed.tampering_reason ?? '').trim();
+
     return {
       // Read the level as shown (no 50 cap — the game goes higher); sanity-bound only.
       level: lvl && lvl >= 1 && lvl <= 100 ? lvl : null,
-      levelXp: toInt(parsed.level_xp_current),
-      levelXpMax: toInt(parsed.level_xp_needed),
+      levelXp: xpCur,
+      levelXpMax: xpMax,
       xp: toInt(parsed.total_xp),
       pokedex: toInt(parsed.caught),
       distance: toKm(parsed.distance_km),
@@ -167,8 +181,11 @@ export async function extractStats(imageUrl) {
       authenticity: {
         // Default to genuine unless the model explicitly says otherwise.
         isPogo: parsed.is_pogo_screenshot !== false,
-        suspected: parsed.tampering_suspected === true,
-        reason: String(parsed.tampering_reason ?? '').trim(),
+        // Flagged if the AI suspects editing OR a value is physically impossible.
+        suspected: llmSuspected || sanityReason != null,
+        // `certain` = proven fake (impossible value), as opposed to the AI's guess.
+        certain: sanityReason != null,
+        reason: sanityReason || llmReason,
       },
     };
   } catch (error) {
