@@ -16,7 +16,7 @@ export function buildVerificationEmbed() {
       [
         'Pour accéder au serveur, poste ici une **capture d’écran** de ton **profil de dresseur** Pokémon GO (avec ton pseudo).',
         '',
-        'Un membre de l’équipe validera, et ton pseudo sera enregistré automatiquement. Tu auras alors accès à l’ensemble des salons.',
+        'Patience le temps qu’un membre du staff te valide. Tu auras alors accès à l’ensemble des salons.',
         '',
         '👇 **Exemple** d’une capture de profil bien lisible.',
         '',
