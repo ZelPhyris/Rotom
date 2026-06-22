@@ -16,7 +16,8 @@ import {
  *     pick the exact post (or the channel root / a new forum post).
  * The move re-posts the message via a webhook (mimicking the author) then deletes
  * the original. The bot needs Manage Webhooks on the target + Manage Messages on
- * the source. Reactions/edit history are not carried over.
+ * the source. The original reactions' emojis are re-applied by the bot (their
+ * authors/counts can't be transferred); edit history is not carried over.
  */
 const FORUM_TYPES = new Set([ChannelType.GuildForum, ChannelType.GuildMedia]);
 const THREADED_TYPES = new Set([
@@ -164,6 +165,7 @@ async function doMove(interaction, srcChannelId, messageId, target) {
     return;
   }
 
+  let sent;
   try {
     const sendOptions = {
       username: (message.member?.displayName ?? message.author.username).slice(0, 80),
@@ -181,7 +183,7 @@ async function doMove(interaction, srcChannelId, messageId, target) {
       const firstLine = message.content?.split('\n')[0]?.trim();
       sendOptions.threadName = (firstLine || `Message de ${message.author.username}`).slice(0, 100);
     }
-    await webhook.send(sendOptions);
+    sent = await webhook.send(sendOptions);
   } catch (error) {
     console.error('[move] webhook send failed:', error);
     await interaction.editReply({ content: 'Échec de la copie du message.', components: [] });
@@ -190,6 +192,15 @@ async function doMove(interaction, srcChannelId, messageId, target) {
   }
 
   await webhook.delete().catch(() => {});
+
+  // Re-apply the original reactions as the bot. Discord can't transfer a
+  // reaction's author/count, so this is cosmetic: the same emojis reappear but
+  // the count resets to 1 (reacted by the bot). Unknown/foreign emojis are skipped.
+  if (sent && message.reactions.cache.size) {
+    for (const reaction of message.reactions.cache.values()) {
+      await sent.react(reaction.emoji).catch(() => {});
+    }
+  }
   const deleted = await message.delete().then(() => true).catch(() => false);
 
   await interaction.editReply({
