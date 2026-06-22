@@ -44,8 +44,10 @@ async function updateDetection(channel, rec) {
   const team = TEAMS[rec.stats.team];
   const teamPart = team ? ` · Équipe : ${team.emoji} **${team.label}**` : '';
   const content = `🔎 Pseudo : ${namePart} · Code ami : ${codePart}${teamPart}\nUn modo valide avec ${VALIDATE}.`;
-  if (rec.detection) await rec.detection.edit(content).catch(() => {});
-  else rec.detection = await channel.send(content).catch(() => null);
+  // Delete the previous detection and repost a fresh one, so the latest reading
+  // always sits at the bottom of the channel instead of being edited in place.
+  if (rec.detection) await rec.detection.delete().catch(() => {});
+  rec.detection = await channel.send(content).catch(() => null);
 }
 
 async function onMemberJoin(member) {
