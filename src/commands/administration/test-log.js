@@ -41,10 +41,7 @@ export async function execute(interaction) {
 
   if (logChannel?.isTextBased?.()) {
     await logChannel.send({ embeds: [embed] });
-    await interaction.reply({
-      content: `Exemple envoyé dans ${logChannel}.`,
-      ephemeral: true,
-    });
+    await interaction.reply({ content: `Exemple envoyé dans ${logChannel}.` });
     return;
   }
 
@@ -53,6 +50,5 @@ export async function execute(interaction) {
       ? 'Salon de log introuvable — voici quand même l’aperçu :'
       : 'Aucun LOG_CHANNEL_ID configuré — voici l’aperçu :',
     embeds: [embed],
-    ephemeral: true,
   });
 }

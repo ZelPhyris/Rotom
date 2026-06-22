@@ -55,8 +55,8 @@ export function buildVerificationLogEmbed({ target, mod, name, team, suspected, 
   const teamInfo = TEAMS[team];
   return new EmbedBuilder()
     .setColor(suspected ? 0xe67e22 : 0x2ecc71)
+    .setAuthor({ name: target.user.tag, iconURL: target.user.displayAvatarURL() })
     .setTitle('Vérification validée')
-    .setThumbnail(target.user.displayAvatarURL())
     .addFields(
       { name: 'Membre', value: `${target} · ${target.user.tag}` },
       { name: 'Validé par', value: `${mod} · ${mod.user.tag}` },
