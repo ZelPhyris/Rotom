@@ -26,26 +26,34 @@ const THREADED_TYPES = new Set([
   ChannelType.GuildMedia,
 ]);
 
+// Newest-first by snowflake id (a just-created post has the highest id), so the
+// cap below never hides a post the moderator just made.
+const newestFirst = (list) => [...list].sort((a, b) => (BigInt(b.id) > BigInt(a.id) ? 1 : -1));
+
 // Active + recent archived (public) threads of a channel, deduped, capped at 24
 // (Discord allows 25 select options; one is reserved for the channel root).
+// Open posts come first (newest first), then recent archived posts as a fallback.
 async function listThreads(channel, cap = 24) {
   if (!channel?.threads) return [];
-  const found = new Map();
+  const active = new Map();
   try {
-    const active = await channel.threads.fetchActive();
-    for (const t of active.threads.values()) found.set(t.id, t);
+    const open = await channel.threads.fetchActive();
+    for (const t of open.threads.values()) active.set(t.id, t);
   } catch {
     /* ignore */
   }
-  if (found.size < cap) {
+  let result = newestFirst(active.values());
+
+  if (result.length < cap) {
     try {
       const archived = await channel.threads.fetchArchived({ type: 'public', limit: 25 });
-      for (const t of archived.threads.values()) if (!found.has(t.id)) found.set(t.id, t);
+      const extra = newestFirst([...archived.threads.values()].filter((t) => !active.has(t.id)));
+      result = result.concat(extra);
     } catch {
       /* ignore */
     }
   }
-  return [...found.values()].slice(0, cap);
+  return result.slice(0, cap);
 }
 
 // Step 1 result: a parent channel was chosen. Offer its posts/threads, or move
