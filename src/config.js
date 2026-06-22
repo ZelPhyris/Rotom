@@ -31,19 +31,19 @@ export const config = {
   clientId: required('CLIENT_ID'),
   guildId: required('GUILD_ID'),
   // Optional: voice channel whose name mirrors the member count ("Membres : {nb}").
-  memberCountChannelId: process.env.MEMBER_COUNT_CHANNEL_ID || '1513800614348455988',
+  memberCountChannelId: process.env.MEMBER_COUNT_CHANNEL_ID || '',
   // "Pending" role assigned on join until a moderator validates the newcomer.
-  verificationRoleId: process.env.VERIFICATION_ROLE_ID || '1513457052239003678',
+  verificationRoleId: process.env.VERIFICATION_ROLE_ID || '',
   // Optional: restrict the verification flow to this channel (else any channel).
   verificationChannelId: process.env.VERIFICATION_CHANNEL_ID || '',
   // "Join to create" hub voice channel: joining it spawns a personal channel.
-  tempVoiceHubId: process.env.TEMP_VOICE_HUB_ID || '1513457053677518974',
+  tempVoiceHubId: process.env.TEMP_VOICE_HUB_ID || '',
   // Category where /rdv creates its temporary meetup channels.
-  rdvCategoryId: process.env.RDV_CATEGORY_ID || '1513457053270675500',
+  rdvCategoryId: process.env.RDV_CATEGORY_ID || '',
   // Channel where /rdv announces newly created meetups.
-  rdvAnnounceChannelId: process.env.RDV_ANNOUNCE_CHANNEL_ID || '1513457052679409685',
+  rdvAnnounceChannelId: process.env.RDV_ANNOUNCE_CHANNEL_ID || '',
   // Channel where a welcome message is posted once a newcomer is validated.
-  welcomeChannelId: process.env.WELCOME_CHANNEL_ID || '1513457052679409689',
+  welcomeChannelId: process.env.WELCOME_CHANNEL_ID || '',
   // PostgreSQL connection string. Empty disables DB-backed features.
   databaseUrl: process.env.DATABASE_URL || '',
   // Google Gemini API key (free tier) for reading profile screenshots. Empty disables it.
@@ -51,13 +51,13 @@ export const config = {
   // Vision model used to extract the trainer name from a screenshot.
   visionModel: process.env.VISION_MODEL || 'gemini-2.5-flash',
   // Role whose members are listed as "ambassadeurs" in the presentation embed.
-  ambassadorRoleId: process.env.AMBASSADOR_ROLE_ID || '1513457052226293796',
+  ambassadorRoleId: process.env.AMBASSADOR_ROLE_ID || '',
   // Optional: channel for level-up announcements (else the channel where it happened).
   levelupChannelId: process.env.LEVELUP_CHANNEL_ID || '',
   // Reward roles by level, e.g. LEVEL_ROLES="10:roleId,20:roleId,30:roleId".
   levelRoles: parseLevelRoles(process.env.LEVEL_ROLES),
   // Forum channel where the bot ❤️-reacts to posted images.
-  forumHeartChannelId: process.env.FORUM_HEART_CHANNEL_ID || '1513801356509708489',
+  forumHeartChannelId: process.env.FORUM_HEART_CHANNEL_ID || '',
   // Custom status (the "bubble" line, no verb). Empty to disable.
   presenceText: process.env.PRESENCE_TEXT || '/help • Pokémon GO Pau ⚡',
   // Status emoji shown before the custom status. A unicode emoji ("🏃") or a
@@ -82,7 +82,7 @@ export const config = {
   // --- Monthly PoGo classement ---
   // Role synced with classement participation (assigned on opt-in / via the
   // participation embed button). Empty = opt-in is tracked in the DB only.
-  classementRoleId: process.env.CLASSEMENT_ROLE_ID || '1514520752853090345',
+  classementRoleId: process.env.CLASSEMENT_ROLE_ID || '',
   // Channel where the bot alerts the staff about a suspicious (edited / regressing)
   // classement screenshot. Empty = no alert is posted (only logged to console).
   classementAdminChannelId: process.env.CLASSEMENT_ADMIN_CHANNEL_ID || '',
