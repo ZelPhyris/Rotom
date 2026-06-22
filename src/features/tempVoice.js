@@ -59,9 +59,17 @@ async function createForMember(state) {
 
   tempChannels.add(channel.id);
 
-  // Inherit the category's permissions, then grant the owner full control.
+  // Inherit the category's permissions first.
   try {
     if (channel.parentId) await channel.lockPermissions();
+  } catch (error) {
+    console.error('[tempVoice] Failed to sync category permissions:', error);
+  }
+
+  // Then grant the owner full control over their own channel (rename, set a user
+  // limit, bitrate, move/mute/kick members, invite…). Kept separate so a failed
+  // category sync above can never leave the owner without their rights.
+  try {
     await channel.permissionOverwrites.edit(
       member.id,
       Object.fromEntries(OWNER_PERMS.map((p) => [p, true])),
