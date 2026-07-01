@@ -1,11 +1,13 @@
-import { SlashCommandBuilder, EmbedBuilder, AttachmentBuilder } from 'discord.js';
+import { SlashCommandBuilder, EmbedBuilder, AttachmentBuilder, PermissionFlagsBits } from 'discord.js';
 import { countBySector } from '../services/sectors.js';
 import { renderSectorMap } from '../services/mapRenderer.js';
 import { MIN_VISIBLE_PLAYERS } from '../config/sectors.js';
 
 export const data = new SlashCommandBuilder()
   .setName('map')
-  .setDescription('Show how many players are active in each area of Pau.');
+  .setDescription('Show how many players are active in each area of Pau.')
+  // Hidden from regular members: only staff ("Gérer le serveur") see and use it.
+  .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild);
 
 export async function execute(interaction) {
   await interaction.deferReply();

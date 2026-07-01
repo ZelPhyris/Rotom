@@ -8,16 +8,6 @@ const BRAND = 0xffffff;
  */
 export const COMMAND_HELP = [
   {
-    id: 'map',
-    name: '/map',
-    emoji: '🗺️',
-    short: 'Carte des joueurs par secteur de Pau.',
-    description:
-      'Affiche une image de la carte de Pau avec le nombre de joueurs par secteur. Un secteur n’affiche son compteur qu’à partir de 3 joueurs (anonymat).',
-    usage: '/map',
-    examples: ['/map'],
-  },
-  {
     id: 'rdv',
     name: '/rdv',
     emoji: '📅',
@@ -174,7 +164,7 @@ export const COMMAND_HELP = [
 // Commands grouped by category. Each category is shown as an inline column so
 // the overview stays compact instead of one tall list.
 const CATEGORIES = [
-  { name: 'PoGo', ids: ['map', 'set-pogo', 'rdv', 'classement-pogo'] },
+  { name: 'PoGo', ids: ['set-pogo', 'rdv', 'classement-pogo'] },
   { name: 'Jeux', ids: ['quiz', 'pendu', 'morpion', 'devinette', 'sondage'] },
   { name: 'Information', ids: ['userinfo'] },
   { name: 'Level', ids: ['niveau', 'classement'] },
