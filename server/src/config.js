@@ -21,6 +21,10 @@ export const config = {
 
   databaseUrl: str(process.env.DATABASE_URL),
 
+  // Discord server (guild) the site is for. Used to detect, at login, whether the
+  // user is an admin of that server from their Discord permissions.
+  guildId: str(process.env.GUILD_ID),
+
   // Bot token (shared .env), used only for read-only Discord REST lookups such
   // as resolving a member's avatar for the leaderboard. Never sent to the browser.
   botToken: str(process.env.DISCORD_TOKEN),
@@ -36,7 +40,9 @@ export const config = {
     redirectUri: str(process.env.OAUTH_REDIRECT_URI) || 'http://localhost:5173/api/auth/callback',
   },
 
-  // Discord user IDs allowed to validate submitted stats (comma-separated).
+  // Optional override: Discord user IDs always treated as admin, even without
+  // admin permissions on the server (comma-separated). Admin status is normally
+  // detected dynamically from the user's permissions on GUILD_ID at login.
   adminIds: str(process.env.ADMIN_DISCORD_IDS)
     .split(',')
     .map((s) => s.trim())

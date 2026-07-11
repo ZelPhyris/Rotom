@@ -30,13 +30,37 @@ export function readSession(request) {
   try {
     const data = JSON.parse(unsigned.value);
     if (!data.exp || data.exp < Date.now()) return null;
-    return { id: data.id, username: data.username, avatar: data.avatar };
+    return { id: data.id, username: data.username, avatar: data.avatar, isAdmin: data.isAdmin === true };
   } catch {
     return null;
   }
 }
 
-export const isAdmin = (user) => Boolean(user && config.adminIds.includes(user.id));
+// Discord permission bits.
+const ADMINISTRATOR = 1n << 3n; // 0x8
+const MANAGE_GUILD = 1n << 5n; // 0x20
+
+/**
+ * Is the user an admin of the POGO PAU server? Looks them up in the guild list
+ * Discord returns (requires the `guilds` OAuth scope) and checks ownership or
+ * the Administrator / Manage Server permission on GUILD_ID.
+ */
+function isGuildAdmin(guilds) {
+  if (!config.guildId || !Array.isArray(guilds)) return false;
+  const g = guilds.find((x) => x.id === config.guildId);
+  if (!g) return false;
+  if (g.owner) return true;
+  try {
+    return (BigInt(g.permissions) & (ADMINISTRATOR | MANAGE_GUILD)) !== 0n;
+  } catch {
+    return false;
+  }
+}
+
+// Admin status is computed at login and stored (signed) in the session; the
+// allowlist stays as an override for accounts without server admin permissions.
+export const isAdmin = (user) =>
+  Boolean(user && (user.isAdmin || config.adminIds.includes(user.id)));
 
 /** Fastify guard: 401 if not logged in; attaches request.user otherwise. */
 export async function requireUser(request, reply) {
@@ -67,7 +91,8 @@ export async function authRoutes(app) {
     url.searchParams.set('client_id', config.discord.clientId);
     url.searchParams.set('redirect_uri', config.discord.redirectUri);
     url.searchParams.set('response_type', 'code');
-    url.searchParams.set('scope', 'identify');
+    // `guilds` lets us read the user's servers + permissions to detect admins.
+    url.searchParams.set('scope', 'identify guilds');
     url.searchParams.set('state', state);
     return reply.redirect(url.toString());
   });
@@ -103,7 +128,26 @@ export async function authRoutes(app) {
     if (!userRes.ok) return reply.code(502).send({ error: 'userinfo_failed' });
     const u = await userRes.json();
 
-    setSession(reply, { id: u.id, username: u.global_name || u.username, avatar: u.avatar });
+    // Detect admin status from the user's permissions on the POGO PAU server.
+    // Best-effort: if the guilds lookup fails we fall back to the allowlist.
+    let admin = config.adminIds.includes(u.id);
+    if (!admin) {
+      try {
+        const guildsRes = await fetch('https://discord.com/api/users/@me/guilds', {
+          headers: { Authorization: `Bearer ${token.access_token}` },
+        });
+        if (guildsRes.ok) admin = isGuildAdmin(await guildsRes.json());
+      } catch {
+        // Network/Discord hiccup — keep the allowlist result.
+      }
+    }
+
+    setSession(reply, {
+      id: u.id,
+      username: u.global_name || u.username,
+      avatar: u.avatar,
+      isAdmin: admin,
+    });
     return reply.redirect(config.webOrigin + '/profil');
   });
 

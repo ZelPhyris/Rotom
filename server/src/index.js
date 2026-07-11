@@ -5,7 +5,9 @@ import { initSchema } from './db.js';
 import { authRoutes } from './auth.js';
 import { leaderboardRoutes } from './routes/leaderboard.js';
 import { statsRoutes } from './routes/stats.js';
+import { adminRoutes } from './routes/admin.js';
 import { poisRoutes } from './routes/pois.js';
+import { eventsRoutes } from './routes/events.js';
 import { startWayspotRefresh } from './lightship.js';
 
 const app = Fastify({ logger: true });
@@ -14,7 +16,9 @@ await app.register(cookie, { secret: config.sessionSecret });
 await app.register(authRoutes);
 await app.register(leaderboardRoutes);
 await app.register(statsRoutes);
+await app.register(adminRoutes);
 await app.register(poisRoutes);
+await app.register(eventsRoutes);
 
 app.get('/api/health', async () => ({ ok: true, service: 'pogo-pau-server' }));
 
