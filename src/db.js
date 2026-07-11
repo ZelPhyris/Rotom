@@ -57,6 +57,21 @@ export async function initDb() {
   console.log('[db] Connected and schema ready.');
 }
 
+/**
+ * Read the per-server config row written by the dashboard (`guilds` table,
+ * owned by the web app). Returns null if the DB or table is unavailable, so the
+ * caller can fall back to the .env config.
+ */
+export async function getGuildConfig(guildId) {
+  if (!pool) return null;
+  try {
+    const { rows } = await pool.query('SELECT * FROM guilds WHERE id = $1', [guildId]);
+    return rows[0] ?? null;
+  } catch {
+    return null; // table missing (web app never ran) → fall back to .env
+  }
+}
+
 /** Upsert a member's Pokémon GO profile. */
 export async function setPogoProfile(discordId, ign, friendCode) {
   if (!pool) throw new Error('Database unavailable');
@@ -224,14 +239,14 @@ export async function topPogoStat(column, limit = 10) {
   const allowed = { pogo_level: 1, pogo_xp: 1, pogo_pokedex: 1, pogo_distance: 1, pogo_pokestops: 1, pogo_eggs: 1 };
   if (!allowed[column]) throw new Error(`Invalid stat column: ${column}`);
   const { rows } = await pool.query(
-    `SELECT discord_id, ${column} AS value
+    `SELECT discord_id, pogo_team, ${column} AS value
      FROM pogo_profiles
      WHERE classement = TRUE AND ${column} IS NOT NULL
      ORDER BY ${column} DESC
      LIMIT $1`,
     [limit],
   );
-  return rows.map((r) => ({ discordId: r.discord_id, value: Number(r.value) }));
+  return rows.map((r) => ({ discordId: r.discord_id, value: Number(r.value), team: r.pogo_team }));
 }
 
 /** Read a key from the generic store (null if absent). */

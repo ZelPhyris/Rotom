@@ -26,6 +26,14 @@ function parseLevelRoles(raw) {
     .sort((a, b) => a.level - b.level);
 }
 
+/** Parse a comma/space separated list of Discord IDs into a clean array. */
+function parseIdList(raw) {
+  return (raw || '')
+    .split(/[\s,]+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
 export const config = {
   token: required('DISCORD_TOKEN'),
   clientId: required('CLIENT_ID'),
@@ -36,6 +44,17 @@ export const config = {
   memberRoleId: process.env.MEMBER_ROLE_ID || '',
   // Optional: restrict the verification flow to this channel (else any channel).
   verificationChannelId: process.env.VERIFICATION_CHANNEL_ID || '',
+  // Role allowed to validate/refuse newcomers without the "Manage Roles" Discord
+  // permission (e.g. a "Staff" role, on par with Admin/Ambassadeur). Empty = none.
+  // Legacy single-role env; kept as the default seed for `validatorRoleIds`.
+  staffRoleId: process.env.STAFF_ROLE_ID || '',
+  // Roles allowed to validate/refuse newcomers (besides "Manage Roles" admins).
+  // Editable from the dashboard (guilds.validator_role_ids). Defaults to the
+  // legacy STAFF_ROLE_ID so the current staff role keeps working out of the box.
+  validatorRoleIds:
+    parseIdList(process.env.VALIDATOR_ROLE_IDS).length > 0
+      ? parseIdList(process.env.VALIDATOR_ROLE_IDS)
+      : parseIdList(process.env.STAFF_ROLE_ID),
   // "Join to create" hub voice channel: joining it spawns a personal channel.
   tempVoiceHubId: process.env.TEMP_VOICE_HUB_ID || '',
   // Category where temp voice channels are created. Empty = same category as the hub.
@@ -60,8 +79,15 @@ export const config = {
   levelupChannelId: process.env.LEVELUP_CHANNEL_ID || '',
   // Reward roles by level, e.g. LEVEL_ROLES="10:roleId,20:roleId,30:roleId".
   levelRoles: parseLevelRoles(process.env.LEVEL_ROLES),
-  // Forum channel where the bot ❤️-reacts to posted images.
+  // Forum channel where the bot ❤️-reacts to posted images (legacy single rule).
   forumHeartChannelId: process.env.FORUM_HEART_CHANNEL_ID || '',
+  // Master switch for the auto-reactions. Disabled only when explicitly "false".
+  forumHeartEnabled: (process.env.FORUM_HEART_ENABLED || 'true').toLowerCase() !== 'false',
+  // Auto-reaction rules: [{ channelId, emojis:[...] }]. Built from the legacy
+  // single ❤️ channel by default; the dashboard can define richer rules (DB).
+  autoReactions: process.env.FORUM_HEART_CHANNEL_ID
+    ? [{ channelId: process.env.FORUM_HEART_CHANNEL_ID, emojis: ['❤️'] }]
+    : [],
   // Custom status (the "bubble" line, no verb). Empty to disable.
   presenceText: process.env.PRESENCE_TEXT || '/help • Pokémon GO Pau ⚡',
   // Status emoji shown before the custom status. A unicode emoji ("🏃") or a

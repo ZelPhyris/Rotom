@@ -1,20 +1,8 @@
-import { SlashCommandBuilder, EmbedBuilder } from 'discord.js';
+import { SlashCommandBuilder } from 'discord.js';
 import { config } from '../config.js';
-import { hasDb, setClassementOptIn, topPogoStat } from '../db.js';
+import { hasDb, setClassementOptIn } from '../db.js';
 import { hasVision } from '../features/visionExtract.js';
-
-const MEDALS = ['🥇', '🥈', '🥉'];
-
-// The three ranked stats. `column` matches the DB column whitelist in topPogoStat.
-const fr = (v) => v.toLocaleString('fr-FR');
-const STATS = {
-  niveau: { column: 'pogo_level', label: 'Niveau', emoji: '⭐', fmt: (v) => `niveau **${v}**` },
-  xp: { column: 'pogo_xp', label: 'XP totale', emoji: '✨', fmt: (v) => `**${fr(v)}** XP` },
-  pokedex: { column: 'pogo_pokedex', label: 'Pokémon capturés', emoji: '🔴', fmt: (v) => `**${fr(v)}** capturés` },
-  distance: { column: 'pogo_distance', label: 'Distance parcourue', emoji: '👟', fmt: (v) => `**${fr(v)}** km` },
-  pokestops: { column: 'pogo_pokestops', label: 'PokéStops visités', emoji: '🛑', fmt: (v) => `**${fr(v)}** PokéStops` },
-  eggs: { column: 'pogo_eggs', label: 'Œufs éclos', emoji: '🥚', fmt: (v) => `**${fr(v)}** œufs éclos` },
-};
+import { buildBoard } from '../embeds/classementBoard.js';
 
 export const data = new SlashCommandBuilder()
   .setName('classement-pogo')
@@ -80,29 +68,7 @@ export async function execute(interaction) {
     return;
   }
 
-  // voir
+  // voir : embed + boutons de catégorie + lien vers le site.
   const key = interaction.options.getString('stat') ?? 'niveau';
-  const stat = STATS[key] ?? STATS.niveau;
-  const top = await topPogoStat(stat.column, 10);
-
-  if (!top.length) {
-    await interaction.reply({
-      content: 'Aucune stat enregistrée pour le moment. Rejoins avec `/classement-pogo rejoindre` puis envoie-moi une capture de ton profil en MP ! 📸',
-      ephemeral: true,
-    });
-    return;
-  }
-
-  const lines = top.map((row, i) => {
-    const rank = MEDALS[i] ?? `**${i + 1}.**`;
-    return `${rank} <@${row.discordId}> — ${stat.fmt(row.value)}`;
-  });
-
-  const embed = new EmbedBuilder()
-    .setColor(0xffffff)
-    .setTitle(`${stat.emoji} Classement PoGo — ${stat.label}`)
-    .setDescription(lines.join('\n'))
-    .setFooter({ text: 'Mets à jour tes stats en m’envoyant une capture en MP.' });
-
-  await interaction.reply({ embeds: [embed], allowedMentions: { parse: [] } });
+  await interaction.reply(await buildBoard(key));
 }

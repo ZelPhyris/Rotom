@@ -4,6 +4,7 @@ import { ActivityType, Client, Collection, Events, GatewayIntentBits, Partials }
 import { config } from './config.js';
 import { collectCommandPaths } from './loadCommands.js';
 import { initDb } from './db.js';
+import { hydrateConfig } from './guildConfig.js';
 import { registerVerification } from './features/verification.js';
 import { registerTempVoice } from './features/tempVoice.js';
 import { registerRdvControls } from './features/rdvControls.js';
@@ -77,10 +78,21 @@ const ACTIVITY_TYPES = {
 // --- Events ---
 client.once(Events.ClientReady, async (c) => {
   console.log(`Ready. Logged in as ${c.user.tag}.`);
-  // Build up to two activities: a custom status ("bubble") and a "Joue à …"
-  // activity. Discord usually renders only the first for bots, so the custom
-  // status comes first. For a custom status, Discord requires
-  // name === "Custom Status"; the visible text lives in `state`.
+
+  await initDb().catch((err) => console.error('[db] Initialization failed:', err));
+  // Link to the dashboard: load config from the DB (falls back to .env), and
+  // create any missing level reward roles. Re-runs periodically so dashboard
+  // edits propagate without a restart.
+  await hydrateConfig(c).catch((err) => console.error('[config] Hydration failed:', err));
+  setInterval(() => {
+    hydrateConfig(c).catch((err) => console.error('[config] Refresh failed:', err));
+  }, 5 * 60 * 1000);
+
+  // Presence uses the (possibly DB-overridden) config. Build up to two
+  // activities: a custom status ("bubble") and a "Joue à …" activity. Discord
+  // usually renders only the first for bots, so the custom status comes first.
+  // For a custom status, Discord requires name === "Custom Status"; the visible
+  // text lives in `state`.
   const activities = [];
   if (config.presenceText) {
     activities.push({
@@ -97,7 +109,6 @@ client.once(Events.ClientReady, async (c) => {
     });
   }
   c.user.setPresence({ status: config.presenceStatus, activities });
-  await initDb().catch((err) => console.error('[db] Initialization failed:', err));
 });
 
 // --- Features ---

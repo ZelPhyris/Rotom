@@ -172,7 +172,14 @@ async function onReaction(reaction, user) {
   if (!target || !target.roles.cache.has(PENDING_ROLE_ID)) return;
 
   const mod = await message.guild.members.fetch(user.id).catch(() => null);
-  if (!mod?.permissions.has(PermissionFlagsBits.ManageRoles)) return;
+  // Who may validate/refuse: anyone with "Manage Roles" (Admin/Ambassadeur), or a
+  // member of one of the configured validator roles — granted the right without
+  // the broad perm. The validator roles are chosen from the dashboard.
+  const validatorRoleIds = config.validatorRoleIds || [];
+  const canDecide =
+    mod?.permissions.has(PermissionFlagsBits.ManageRoles) ||
+    validatorRoleIds.some((id) => mod?.roles.cache.has(id));
+  if (!canDecide) return;
 
   const channel = message.channel;
   const rec = reviews.get(target.id);

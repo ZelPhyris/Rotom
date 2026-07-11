@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { AttachmentBuilder, EmbedBuilder, Events } from 'discord.js';
 import { config } from '../config.js';
 import { JOIN_BUTTON_ID } from '../embeds/classement.js';
+import { buildBoard } from '../embeds/classementBoard.js';
 import { buildPogoStatsEmbed } from '../embeds/pogoStats.js';
 import { exampleImageAttachment } from '../embeds/exampleImage.js';
 import { applyTeamRole } from './teamRole.js';
@@ -299,6 +300,18 @@ async function onJoinButton(interaction) {
   await interaction.reply({ content, ephemeral: true }).catch(() => {});
 }
 
+// The category buttons under a leaderboard: rebuild the board for the chosen
+// stat and edit the message in place (fresh data each time).
+const CAT_PREFIX = 'classement:cat:';
+async function onCategoryButton(interaction) {
+  if (!interaction.isButton() || !interaction.customId.startsWith(CAT_PREFIX)) return false;
+  const key = interaction.customId.slice(CAT_PREFIX.length);
+  await interaction
+    .update(await buildBoard(key))
+    .catch((e) => console.error('[classement] Board update failed:', e?.message ?? e));
+  return true;
+}
+
 /**
  * @param {import('discord.js').Client} client
  */
@@ -307,8 +320,13 @@ export function registerClassement(client) {
     onDirectMessage(message).catch((e) => console.error('[classement] DM handling failed:', e));
   });
 
-  client.on(Events.InteractionCreate, (interaction) => {
-    onJoinButton(interaction).catch((e) => console.error('[classement] Join button failed:', e));
+  client.on(Events.InteractionCreate, async (interaction) => {
+    try {
+      if (await onCategoryButton(interaction)) return;
+      await onJoinButton(interaction);
+    } catch (e) {
+      console.error('[classement] Interaction failed:', e);
+    }
   });
 
   client.once(Events.ClientReady, (c) => {

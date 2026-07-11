@@ -16,29 +16,15 @@ export function buildClassementEmbed() {
     .setThumbnail('https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/25.png')
     .setDescription(
       [
-        '### Et si on savait enfin qui est le meilleur dresseur de Pau ?',
+        'Et si on savait enfin qui est le meilleur dresseur de Pau ?',
+        'Chaque mois on se compare sur **Niveau · XP · Captures · Distance · PokéStops · Œufs éclos**.',
         '',
-        'Chaque mois, la communauté se compare sur plusieurs tableaux :',
-        '> **Niveau** · **XP totale** · **Captures** · **Distance** · **PokéStops** · **Œufs éclos**',
+        'Clique sur **Participer**, puis envoie-moi une **capture de ton profil** en MP : je lis tout automatiquement. 📸',
         '',
-        'Que tu sois lvl 50 ou en pleine montée, **ta place t’attend**.',
+        'Une relance par mois, ignorable si tu n’es pas dispo. 🔔',
       ].join('\n'),
     )
-    .addFields(
-      {
-        name: '✅  Rejoindre, c’est instantané',
-        value: 'Un clic sur **Participer** ci-dessous → tu reçois le rôle et un petit message privé pour démarrer. C’est tout.',
-      },
-      {
-        name: '📸  Zéro saisie, juste une capture',
-        value: 'Envoie-moi en MP une **photo de ton profil** (pense à fermer le bandeau des récompenses) et une de ton **badge Œufs éclos** : je lis tout **automatiquement**.',
-      },
-      {
-        name: '🔔  On s’occupe du reste',
-        value: 'Une fois par mois, je te relance gentiment pour rafraîchir tes stats. Pas dispo ? Tu ignores, aucun souci.',
-      },
-    )
-    .setFooter({ text: 'Voir le classement : /classement-pogo voir  ·  Quitter quand tu veux : /classement-pogo quitter' });
+    .setFooter({ text: 'Voir : /classement-pogo voir  ·  Quitter : /classement-pogo quitter' });
 }
 
 /**
