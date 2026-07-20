@@ -3,6 +3,7 @@ import { buildReglementEmbed } from '../embeds/reglement.js';
 import { buildVerificationEmbed } from '../embeds/verification.js';
 import { buildSuggestionsEmbed } from '../embeds/suggestions.js';
 import { buildPresentationEmbed } from '../embeds/presentation.js';
+import { buildRessourcesEmbed } from '../embeds/ressources.js';
 import { buildClassementEmbed, buildClassementComponents } from '../embeds/classement.js';
 import { exampleImageAttachment } from '../embeds/exampleImage.js';
 
@@ -16,6 +17,7 @@ const EMBEDS = {
   verification: { label: 'Vérification', build: buildVerificationEmbed, files: () => [exampleImageAttachment()].filter(Boolean) },
   suggestions: { label: 'Suggestions', build: buildSuggestionsEmbed },
   presentation: { label: 'Présentation', build: buildPresentationEmbed },
+  ressources: { label: 'Salons à connaître', build: buildRessourcesEmbed },
   classement: { label: 'Classement PoGo', build: buildClassementEmbed, components: buildClassementComponents },
 };
 
