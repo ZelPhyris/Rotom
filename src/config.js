@@ -75,6 +75,9 @@ export const config = {
   visionModel: process.env.VISION_MODEL || 'gemini-2.5-flash',
   // Role whose members are listed as "ambassadeurs" in the presentation embed.
   ambassadorRoleId: process.env.AMBASSADOR_ROLE_ID || '',
+  // Role gathering the staff and the ambassadors, listed in the presentation
+  // embed. Empty = the embed shows "À venir !" instead of a member list.
+  councilRoleId: process.env.COUNCIL_ROLE_ID || '',
   // Optional: channel for level-up announcements (else the channel where it happened).
   levelupChannelId: process.env.LEVELUP_CHANNEL_ID || '',
   // Reward roles by level, e.g. LEVEL_ROLES="10:roleId,20:roleId,30:roleId".
@@ -124,4 +127,10 @@ export const config = {
   // Needs the bot to have "Moderate Members" and a role above the target.
   languageTimeoutMild: Number(process.env.LANGUAGE_TIMEOUT_MILD ?? 10),
   languageTimeoutStrong: Number(process.env.LANGUAGE_TIMEOUT_STRONG ?? 30),
+  // --- YouTube video announcements ---
+  // Channel to watch: a channel id ("UC…"), a handle ("@FRESHBY") or the full
+  // channel URL. Empty = the watcher stays off.
+  youtubeChannelId: process.env.YOUTUBE_CHANNEL_ID || '',
+  // Discord channel the new videos are posted in. Empty = the watcher stays off.
+  youtubeAnnounceChannelId: process.env.YOUTUBE_ANNOUNCE_CHANNEL_ID || '',
 };

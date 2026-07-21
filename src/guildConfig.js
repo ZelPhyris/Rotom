@@ -22,6 +22,7 @@ const FIELD_MAP = {
   rdv_announce_channel_id: 'rdvAnnounceChannelId',
   levelup_channel_id: 'levelupChannelId',
   ambassador_role_id: 'ambassadorRoleId',
+  council_role_id: 'councilRoleId',
   forum_heart_channel_id: 'forumHeartChannelId',
   vision_model: 'visionModel',
   classement_role_id: 'classementRoleId',
@@ -31,6 +32,8 @@ const FIELD_MAP = {
   presence_game: 'presenceGame',
   presence_game_type: 'presenceGameType',
   presence_status: 'presenceStatus',
+  youtube_channel_id: 'youtubeChannelId',
+  youtube_announce_channel_id: 'youtubeAnnounceChannelId',
 };
 
 const INT_MAP = {
