@@ -13,23 +13,28 @@ const PIN = '<:pushpin_1f4cc:1528857210187288689>';
 // survive. Same convention as the resource channels embed.
 const GAP = '\n​';
 
-// Separator between the Conseil 4 mentions, kept on a single line. A custom
-// emoji renders here because the mentions sit in a field value (never possible
-// in a title / field name / footer). Bot application emoji: a mini Pokéball.
+// Pokéball separating the Conseil 4 mentions on their single line. A custom
+// emoji renders here because the mentions sit in a field value.
 const MEMBER_SEP = ' <:pokeball:1529068808541831240> ';
+
+// Between two adjacent ambassadors the Pokéball would sit between their two
+// badges and crowd the line, so that pair gets a plain gap instead.
+const AMB_SEP = ' ';
 
 // Badge shown next to Conseil 4 members who are also ambassadors. Bot
 // application emoji: a purple pentagon with a white star (generated, crisp).
 const AMBASSADOR_EMOJI = '<:ambassadeur:1529095444817252505>';
 
 /**
- * The members holding a role, as mentions on a single line separated by the
- * Pokéball. Members who also hold `badgeRoleId` get `badge` appended. Resolved
- * live so the embed never lists someone who has left the team.
+ * The members holding a role, on a single line. Ambassadors (members of
+ * `badgeRoleId`) get `badge` prefixed. Members are separated by the Pokéball,
+ * except between two ambassadors where a plain gap avoids a crowded
+ * badge-Pokéball-badge run. Resolved live so the embed never lists someone who
+ * has left the team.
  * @param {import('discord.js').Guild} guild
  * @param {string} roleId
  * @param {string} [badgeRoleId]  role earning an extra badge (e.g. ambassadors)
- * @param {string} [badge]        emoji appended to members holding badgeRoleId
+ * @param {string} [badge]        emoji prefixed to members holding badgeRoleId
  * @returns {Promise<string>}
  */
 async function roleMembers(guild, roleId, badgeRoleId, badge) {
@@ -40,10 +45,17 @@ async function roleMembers(guild, roleId, badgeRoleId, badge) {
     await guild.members.fetch();
     const role = guild.roles.cache.get(roleId);
     if (!role) return 'À venir !';
-    const mentions = [...role.members.values()]
-      .sort((a, b) => a.displayName.localeCompare(b.displayName))
-      .map((m) => (badgeRoleId && badge && m.roles.cache.has(badgeRoleId) ? `${badge} ${m}` : m.toString()));
-    return mentions.length ? mentions.join(MEMBER_SEP) : 'À venir !';
+    const members = [...role.members.values()].sort((a, b) => a.displayName.localeCompare(b.displayName));
+    if (!members.length) return 'À venir !';
+
+    const isBadged = (m) => Boolean(badgeRoleId && badge && m.roles.cache.has(badgeRoleId));
+    const label = (m) => (isBadged(m) ? `${badge} ${m}` : m.toString());
+
+    let line = label(members[0]);
+    for (let i = 1; i < members.length; i += 1) {
+      line += (isBadged(members[i - 1]) && isBadged(members[i]) ? AMB_SEP : MEMBER_SEP) + label(members[i]);
+    }
+    return line;
   } catch {
     return 'Indisponible pour le moment.';
   }
@@ -76,7 +88,7 @@ export async function buildPresentationEmbed(interaction) {
         value:
           [
             'Rassembler la communauté Pokémon GO locale, **dans la bonne humeur et en toute sécurité** :',
-            '• voir qu’on n’est jamais seul à jouer dans son coin,',
+            '• rencontrer les dresseurs de son quartier,',
             '• organiser facilement des **sorties et des raids**,',
             '• s’entraider (PvP, échanges, conseils),',
             '… sans jamais exposer d’adresse ou de position perso.',
