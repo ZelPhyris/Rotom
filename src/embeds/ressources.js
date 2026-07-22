@@ -7,16 +7,31 @@ const BRAND = 0xffffff; // white
 // to survive.
 const GAP = '\n​';
 
+// Divider drawn between two items of a group. Written with en dashes on
+// purpose: a line starting with "- " is parsed by Discord as a bullet list,
+// which would turn the rule into a stray bullet point.
+const RULE = '– – – – – –';
+
+/** Marker placed between two items of a group to draw a divider line. */
+const SEPARATOR = { rule: true };
+
 /**
  * The resource channels to highlight, grouped by theme and in display order.
  * Channels are referenced by ID: Discord renders "<#id>" with the channel's
  * current name, so renaming a channel never breaks this embed.
+ *
+ * Some entries are forum posts (threads). A "<#id>" pill for a thread is only
+ * resolved from the viewer's client cache while the thread is active, so an
+ * archived post would render "#Inconnu". The forumKeepAlive feature keeps those
+ * posts permanently active (see src/features/forumKeepAlive.js), which is why
+ * they can stay simple "<#id>" mentions here.
  *
  * Group titles are set in caps and stay emoji-free: the caps/lowercase contrast
  * carries the hierarchy on its own. Keep new groups consistent with that.
  *
  * An item without `desc` is rendered as a bare mention; a group whose items all
  * lack one is laid out as a compact inline list under the group's own `desc`.
+ * Insert `SEPARATOR` between two items to draw a rule between them.
  */
 const GROUPS = [
   {
@@ -30,9 +45,10 @@ const GROUPS = [
   {
     title: 'PARTAGE & COMMUNAUTÉ',
     items: [
-      { id: '1518601425574297671', desc: 'Présente-toi à la communauté.' },
+      { id: '1518601425574297671', desc: 'Présente-toi, fais connaissance et crée des liens avec la communauté.' },
       { id: '1518603710782242816', desc: 'Échange ton code ami avec les autres dresseurs.' },
       { id: '1518602555083460748', desc: 'Tes plus belles prises : shiny, pépites, 100 %…' },
+      SEPARATOR,
       { id: '1385575266482655405', desc: 'Discute de tout et n’importe quoi, pose tes questions.' },
     ],
   },
@@ -56,12 +72,17 @@ const GROUPS = [
 
 /** Render a group's channels: one line each with a description, inline list otherwise. */
 function renderGroup(group) {
-  if (group.items.every((item) => !item.desc)) {
-    const list = group.items.map((item) => `<#${item.id}>`).join(' • ');
+  const channels = group.items.filter((item) => !item.rule);
+
+  if (channels.every((item) => !item.desc)) {
+    const list = channels.map((item) => `<#${item.id}>`).join(' • ');
     return group.desc ? `${group.desc}\n${list}` : list;
   }
 
-  const lines = group.items.map((item) => (item.desc ? `<#${item.id}> — ${item.desc}` : `<#${item.id}>`));
+  const lines = group.items.map((item) => {
+    if (item.rule) return RULE;
+    return item.desc ? `<#${item.id}> — ${item.desc}` : `<#${item.id}>`;
+  });
   return group.desc ? [group.desc, ...lines].join('\n') : lines.join('\n');
 }
 
